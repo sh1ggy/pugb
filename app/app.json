@@ -28,7 +28,14 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": ["com.kongi.pugb"]
-
+    "scheme": ["com.kongi.pugb"], 
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
+        }
+      ]
+    ]
   }
 }

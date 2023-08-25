@@ -27,7 +27,8 @@
     "react-native-svg": "^13.13.0",
     "react-native-svg-transformer": "^1.1.0",
     "react-native-web": "^0.19.8",
-    "tamagui": "^1.56.0"
+    "tamagui": "^1.56.0",
+    "expo-camera": "~13.4.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

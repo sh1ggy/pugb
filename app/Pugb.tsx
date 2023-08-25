@@ -1,13 +1,16 @@
-import Logo from "./assets/logo.svg";
-import { Stack, Button, Text } from 'tamagui';
-import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useMemo } from "react";
-import { useAtom } from 'jotai';
+import { useEffect, useState } from "react";
 import { userDataAtom, userGuildsAtom } from "./lib/store";
 import { UserDataDTO } from "./lib/types";
-WebBrowser.maybeCompleteAuthSession();
+import { useAtom } from 'jotai';
+import { Stack, Button, Text, View } from 'tamagui';
+import Logo from "./assets/logo.svg";
 
+import { TouchableOpacity, StyleSheet } from "react-native";
+import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import { Camera, CameraType } from 'expo-camera';
+
+WebBrowser.maybeCompleteAuthSession();
 const discovery = {
   authorizationEndpoint: 'https://discord.com/oauth2/authorize',
   tokenEndpoint: 'https://discord.com/api/oauth2/token',
@@ -20,6 +23,13 @@ export default function Pugb() {
   const [userData, setUserData] = useAtom(userDataAtom);
   const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
 
+  const [type, setType] = useState(CameraType.back);
+  const [permission, requestPermission] = Camera.useCameraPermissions();
+
+  function toggleCameraType() {
+    setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
+  }
+
   const [request, response, promptAsync] = useAuthRequest(
     {
       clientId: CLIENT_ID,
@@ -29,7 +39,6 @@ export default function Pugb() {
     },
     discovery
   );
-
 
   useEffect(() => {
     console.log({ response });
@@ -55,11 +64,24 @@ export default function Pugb() {
         catch (e) {
           console.log(e);
         }
-
       };
       codeRequestFn();
     }
   }, [response, setUserData]);
+
+
+  if (!permission) {
+    // Camera permissions are still loading
+    return <View />;
+  }
+
+  if (!permission.granted) {
+    return (
+      <View flex={1} bg={'#23252c'} ai={'center'} jc={'center'}>
+        <Button bg={'#5462eb'} onPress={requestPermission}>grant camera permissions</Button>
+      </View>
+    );
+  }
 
   return (
     <Stack bg={'#23252c'} flex={1} jc={'center'} ai={'center'}>
@@ -71,9 +93,19 @@ export default function Pugb() {
       {userData &&
         <Stack>
           <Text>{userData}</Text>
+          <Text>{userGuilds}</Text>
         </Stack>
-
       }
-    </Stack>
+
+      <View style={{ width: 100, height: 100 }}>
+        <Camera style={{ width: 100, height: 100 }} type={type}>
+          <View style={{ width: 100, height: 100 }}>
+            <TouchableOpacity onPress={toggleCameraType}>
+              <Text>Flip Camera</Text>
+            </TouchableOpacity>
+          </View>
+        </Camera>
+      </View>
+    </Stack >
   )
 }
