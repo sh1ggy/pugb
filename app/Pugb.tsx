@@ -70,14 +70,18 @@ export default function Pugb() {
     }
   }, [response, setUserData]);
 
-  useEffect(() => {
-    const eventSource = new EventSource(`${SERVER_URL}/sse`); 
+  function startEventSource() {
+    const eventSource = new EventSource(`${SERVER_URL}/game_sse`);
     eventSource.addEventListener('message', (event) => {
-      console.log({event});
+      console.log({ event });
     })
     eventSource.addEventListener('close', (event) => {
-      console.log({event})
+      console.log({ event })
     })
+
+  }
+
+  useEffect(() => {
   }, [])
 
   if (!permission) {
@@ -99,6 +103,10 @@ export default function Pugb() {
       <Button
         onPress={() => { promptAsync(); }}
         bg={'#5462eb'}>Login
+      </Button>
+      <Button
+        onPress={() => { startEventSource() }}
+        bg={'#5462eb'}>Test SSE
       </Button>
       {userData &&
         <Stack>

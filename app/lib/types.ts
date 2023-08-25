@@ -1,3 +1,10 @@
+export interface CodeRequestDTO {
+  code: String,
+  code_verifier: String,
+  redirect_uri: String,
+}
+
+
 export interface UserData {
   id: string
   username: string
@@ -6,7 +13,7 @@ export interface UserData {
   rt: string
 }
 export interface UserDataDTO extends UserData {
-  guilds: Guild[], 
+  guilds: Guild[],
 }
 
 export interface Guild {
@@ -20,9 +27,9 @@ export interface Guild {
 }
 
 export enum PremiumType {
-  None, 
+  None,
   NitroClassic,
-  Nitro, 
+  Nitro,
   NitroBasic,
 }
 
@@ -40,9 +47,9 @@ export enum PlayerState {
 }
 
 export interface Player {
-  id: string, 
-  username: string, 
-  avatar: string, 
+  id: string,
+  username: string,
+  avatar: string,
   active: boolean,
   state: PlayerState,
   premium_type: PremiumType,
@@ -64,7 +71,7 @@ export enum KillState {
 
 export interface Kill {
   id: string,
-  killerId: string, 
+  killerId: string,
   killeeId: string,
   time: string,
   image: string, // CDN link
@@ -76,5 +83,5 @@ export interface Revive {
   playerId: string,
   killId: string,
   image: string // CDN link
-  
+
 }
