@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { userDataAtom, userGuildsAtom } from "./lib/store";
-import { UserDataDTO } from "./lib/types";
+import { userDataAtom, userGuildsAtom } from "../lib/store";
+import { UserDataDTO } from "../lib/types";
 import { useAtom } from 'jotai';
-import { Stack, Button, Text, View } from 'tamagui';
-import Logo from "./assets/logo.svg";
+import { Stack, Button, Text, View, XStack, YStack, Image } from 'tamagui';
+import Logo from "../assets/logo.svg";
 
-import { TouchableOpacity, StyleSheet } from "react-native";
-import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
+import { TouchableOpacity } from "react-native";
+import { makeRedirectUri, useAuthRequest } from 'expo-auth-session'; ``
 import * as WebBrowser from 'expo-web-browser';
 import { Camera, CameraType } from 'expo-camera';
 import EventSource, { EventSourceListener } from "react-native-sse";
@@ -78,7 +78,6 @@ export default function Pugb() {
     eventSource.addEventListener('close', (event) => {
       console.log({ event })
     })
-
   }
 
   useEffect(() => {
@@ -108,22 +107,39 @@ export default function Pugb() {
         onPress={() => { startEventSource() }}
         bg={'#5462eb'}>Test SSE
       </Button>
+      <Stack>
+        <YStack ai={'center'} jc={'center'}>
+          < XStack ai={'flex-start'} bg={'#5462eb'} br={'$2'} mx={'$5'} shadowColor={'red'} borderWidth={'$1.5'} >
+            <Image
+              source={{
+                uri: userData?.avatar
+              }}
+              zi={'$5'} w={100} h={100} borderRadius={'$2'}
+            />
+            <YStack zi={'$5'} pos={'absolute'} right={0} p={'$5'}>
+              <Text ta={'left'} fos={'$6'} col={'#000'} color={'white'}>{userData?.username}</Text>
+
+              {userGuilds?.map((guild) => {
+                <Text color={'white'}>guilds {guild}</Text>
+              })}
+            </YStack>
+          </XStack >
+        </YStack >
+
+        <View style={{ width: 500, height: 500, }}>
+          <Camera style={{ width: 200, height: 200, borderRadius: 30 }} type={type}>
+            <View style={{ width: 100, height: 100, borderRadius: 30 }}>
+              <TouchableOpacity onPress={toggleCameraType}>
+                <Text>Flip Camera</Text>
+              </TouchableOpacity>
+            </View>
+          </Camera>
+        </View>
+      </Stack>
       {userData &&
-        <Stack>
-          <Text>{userData}</Text>
-          <Text>{userGuilds}</Text>
-        </Stack>
+        <></>
       }
 
-      <View style={{ width: 100, height: 100 }}>
-        <Camera style={{ width: 100, height: 100 }} type={type}>
-          <View style={{ width: 100, height: 100 }}>
-            <TouchableOpacity onPress={toggleCameraType}>
-              <Text>Flip Camera</Text>
-            </TouchableOpacity>
-          </View>
-        </Camera>
-      </View>
     </Stack >
   )
 }

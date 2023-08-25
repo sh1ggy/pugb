@@ -4,7 +4,6 @@ export interface CodeRequestDTO {
   redirect_uri: String,
 }
 
-
 export interface UserData {
   id: string
   username: string
