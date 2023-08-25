@@ -9,6 +9,7 @@ import { TouchableOpacity, StyleSheet } from "react-native";
 import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { Camera, CameraType } from 'expo-camera';
+import EventSource, { EventSourceListener } from "react-native-sse";
 
 WebBrowser.maybeCompleteAuthSession();
 const discovery = {
@@ -41,7 +42,7 @@ export default function Pugb() {
   );
 
   useEffect(() => {
-    console.log({ response });
+    // console.log({ response });
     if (response?.type === 'success') {
       const { code, state } = response.params;
       const codeRequestFn = async () => {
@@ -69,6 +70,15 @@ export default function Pugb() {
     }
   }, [response, setUserData]);
 
+  useEffect(() => {
+    const eventSource = new EventSource(`${SERVER_URL}/sse`); 
+    eventSource.addEventListener('message', (event) => {
+      console.log({event});
+    })
+    eventSource.addEventListener('close', (event) => {
+      console.log({event})
+    })
+  }, [])
 
   if (!permission) {
     // Camera permissions are still loading

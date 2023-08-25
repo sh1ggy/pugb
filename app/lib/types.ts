@@ -2,19 +2,7 @@ export interface UserData {
   id: string
   username: string
   avatar: string
-  discriminator: string
-  public_flags: number
-  flags: number
-  banner: string
-  accent_color: number
-  global_name: string
-  avatar_decoration: any
-  banner_color: string
-  mfa_enabled: boolean
-  locale: string
   premium_type: PremiumType
-  email: string
-  verified: boolean
   rt: string
 }
 export interface UserDataDTO extends UserData {
@@ -31,21 +19,62 @@ export interface Guild {
   features: string[]
 }
 
-export enum BackgroundSelection {
-  DiscordBanner,
-  OverwatchBanner, 
-  NotSelected,
-}
-
-export interface UserPreferences {
-  bgMode: BackgroundSelection, 
-  color: string,
-  bannerSelection?: number,
-}
-
 export enum PremiumType {
   None, 
   NitroClassic,
   Nitro, 
   NitroBasic,
+}
+
+export interface Game {
+  id: string,
+  guildID: string,
+  thread: any,
+  gameState: GameState,
+}
+
+
+export enum PlayerState {
+  Alive,
+  Dead,
+}
+
+export interface Player {
+  id: string, 
+  username: string, 
+  avatar: string, 
+  active: boolean,
+  state: PlayerState,
+  premium_type: PremiumType,
+}
+
+export interface GameState {
+  allPlayers: Player[],
+  activePlayers: string[],
+  killFeed: Kill[],
+  status: boolean,
+  // alivePlayers: string[],
+  // deadPlayers: string[],
+}
+
+export enum KillState {
+  Contested,
+  Normal,
+}
+
+export interface Kill {
+  id: string,
+  killerId: string, 
+  killeeId: string,
+  time: string,
+  image: string, // CDN link
+  state: KillState,
+}
+
+export interface Revive {
+  id: string,
+  playerId: string,
+  killId: string,
+  image: string // CDN link
+  
 }
