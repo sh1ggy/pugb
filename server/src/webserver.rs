@@ -24,6 +24,7 @@ use crate::{
 use crate::error::{Error, Result};
 
 pub mod auth;
+pub mod shoot;
 
 static AUTH_COOKIE: &str = "auth_token";
 
@@ -96,7 +97,8 @@ pub async fn get_refreshed_user(cookies: Cookies) -> Result<Json<Value>> {
             "success": true
         }
     }));
-    Err(Error::AuthFailNoAuthTokenCookie)
+    // Err(Error::AuthFailNoAuthTokenCookie)
+    Ok(body)
 }
 
 

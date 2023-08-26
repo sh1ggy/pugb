@@ -1,13 +1,42 @@
+use std::{io::{self}};
+use tokio::{fs::File, io::BufWriter};
+
+use axum::{extract::{Path, BodyStream, Multipart}, body::Bytes, BoxError};
+use futures::{Stream, TryStreamExt};
+use http::StatusCode;
+use tokio_util::io::StreamReader;
+
+use crate::error::{Error, Result};
 
 // https://github.com/tokio-rs/axum/blob/24f0f3eae8054c7a495cd364087f2dd7fa8b87e0/examples/stream-to-file/src/main.rs
 pub async fn save_request_body(
      Path(file_name): Path<String>,
     request: BodyStream,
-) -> String {
+) -> Result<()> {
     println!("File name: {}", file_name);
     println!("Body: {:?}", request);
-    "Hello, world!".to_string()
+    stream_to_file(&file_name, request).await
+    // "Hello, world!".to_string()
 }
+
+pub async fn shoot_request(mut multipart: Multipart) -> Result<()> {
+    while let Some(field) = multipart.next_field().await.unwrap() {
+        println!("File: {:?}", field);
+        let file_name = if let Some(file_name) = field.file_name() {
+            file_name.to_owned()
+        } else {
+            continue;
+        };
+
+        stream_to_file(&file_name, field).await?;
+    }
+
+    Ok(())
+}
+
+
+
+const UPLOADS_DIRECTORY: &str = "uploads";
 
 async fn stream_to_file<S, E>(path: &str, stream: S) -> Result<()>
 where
@@ -15,7 +44,8 @@ where
     E: Into<BoxError>,
 {
     if !path_is_valid(path) {
-        return Err((StatusCode::BAD_REQUEST, "Invalid path".to_owned()));
+        // return Err((StatusCode::BAD_REQUEST, "Invalid path".to_owned()));
+        return Err(Error::BadRequestInvalidPath);
     }
 
     async {
@@ -34,7 +64,8 @@ where
         Ok::<_, io::Error>(())
     }
     .await
-    .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
+    .map_err(|err| Error::BadRequestInvalidStream  { inner: err.to_string() })
+    // .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
 }
 // to prevent directory traversal attacks we ensure the path consists of exactly one normal
 // component
