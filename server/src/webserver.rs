@@ -18,7 +18,7 @@ use crate::actor::{ActorRef, InternalBroadcast, InternalRequest};
 
 use crate::error::{Error, Result};
 
-mod auth;
+pub mod auth;
 
 static AUTH_COOKIE: &str = "auth_token";
 
@@ -28,7 +28,6 @@ pub async fn auth_handler(
     Extension(actor): Extension<ActorRef>,
     Json(req): Json<CodeRequestDTO>,
 ) -> Result<Json<Value>> {
-    cookies.add(Cookie::new(AUTH_COOKIE, req.code.clone()));
 
     // TODO do a join on the servres of the user and games that exist and send back to client
     let body = Json(json!({
@@ -74,6 +73,9 @@ pub async fn auth_handler(
         .await
         .unwrap();
     println!("Response: {:?}", response);
+    let rt = "";
+
+    cookies.add(Cookie::new(AUTH_COOKIE, rt.to_string()));
 
     // actor.sender.send(InternalRequest::GetUser { rt: (), res: () }});
 
