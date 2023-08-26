@@ -2,12 +2,13 @@ use std::convert::Infallible;
 
 use async_stream::try_stream;
 use axum::{
-    extract::{self, State, Path, BodyStream},
+    body::Bytes,
+    extract::{self, BodyStream, Path, State},
     response::{
         sse::{Event, KeepAlive},
         Sse,
     },
-    Extension, Json, body::Bytes, BoxError,
+    BoxError, Extension, Json,
 };
 use futures::Stream;
 use serde::{Deserialize, Serialize};
@@ -18,10 +19,12 @@ use tower_cookies::{Cookie, Cookies};
 
 use crate::{
     actor::{ActorRef, InternalBroadcast, InternalRequest},
-    models::{UserData, DiscordTokenResponse, UserDataDTO},
+    models::{DiscordTokenResponse, UserData, UserDataDTO},
 };
 
 use crate::error::{Error, Result};
+
+use self::auth::ctx_resolver;
 
 pub mod auth;
 pub mod shoot;
@@ -91,20 +94,24 @@ pub async fn auth_handler(
         return Err(Error::AuthFailIncorrectCode);
     }
 }
-pub async fn get_refreshed_user(Path(thread_id): Path<u64>, cookies: Cookies) -> Result<Json<Value>> {
-    
-    let body = Json(json!({
-        "result": {
-            "success": true
-        },
-        "game": {
-            "id": thread_id
-        }
-    }));
-    // Err(Error::AuthFailNoAuthTokenCookie)
-    Ok(body)
-}
 
+pub async fn get_refreshed_user(
+    // State(req_client): State<reqwest::Client>,
+    Extension(actor): Extension<ActorRef>,
+    cookies: Cookies,
+) -> Result<Json<UserDataDTO>> {
+    let user = ctx_resolver(actor.clone(), &cookies).await?;
+    // let body = Json(json!({
+    //     "result": {
+    //         "success": true
+    //     },
+    //     "game": {
+    //         "id": thread_id
+    //     }
+    // }));
+    // Err(Error::AuthFailNoAuthTokenCookie)
+    Ok(Json(user))
+}
 
 // Get query param for game id
 pub async fn game_sse_handler(
