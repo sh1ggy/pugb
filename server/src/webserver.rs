@@ -10,15 +10,17 @@ use axum::{
     Extension, Json,
 };
 use futures::Stream;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use serenity::client;
+use tokio::sync::oneshot;
 use tower_cookies::{Cookie, Cookies};
 
-use crate::actor::{ActorRef, InternalBroadcast, InternalRequest};
+use crate::{actor::{ActorRef, InternalBroadcast, InternalRequest}, models::UserData};
 
 use crate::error::{Error, Result};
 
-mod auth;
+pub mod auth;
 
 static AUTH_COOKIE: &str = "auth_token";
 
@@ -27,8 +29,7 @@ pub async fn auth_handler(
     State(req_client): State<reqwest::Client>,
     Extension(actor): Extension<ActorRef>,
     Json(req): Json<CodeRequestDTO>,
-) -> Result<Json<Value>> {
-    cookies.add(Cookie::new(AUTH_COOKIE, req.code.clone()));
+) -> Result<Json<UserData>> {
 
     // TODO do a join on the servres of the user and games that exist and send back to client
     let body = Json(json!({
@@ -36,24 +37,25 @@ pub async fn auth_handler(
             "success": true
         }
     }));
+    let scopes = vec!["identify", "email", "guilds"];
+    let client_id = std::env::var("CLIENT_ID").unwrap();
+    let client_secret = std::env::var("CLIENT_SECRET").unwrap();
+    println!("Client id: {}, client_secret {}", client_id, client_secret);
 
     // Make code request to get rt
-    let form = reqwest::multipart::Form::new()
-        .text("client_id", std::env::var("CLIENT_ID").unwrap())
-        .text("client_secret", std::env::var("CLIENT_SECRET").unwrap())
-        .text("grant_type", "authorization_code")
-        .text("code", req.code.clone())
-        .text("redirect_uri", req.redirect_uri.clone())
-        .text("code_verifier", req.code_verifier.clone())
-        .text("scope", "identify");
+
+    // It requires a URL encoded form, not multipart
+    let params = [
+        ("client_id", client_id),
+        ("client_secret", client_secret),
+        ("grant_type", "authorization_code".to_string()),
+        ("redirect_uri", req.redirect_uri.clone()),
+        ("scope", scopes.join(" ")),
+        ("code", req.code.clone()),
+        ("code_verifier", req.code_verifier.clone())
+    ];
 
     let url = "https://discord.com/api/oauth2/token";
-    // const options = {
-    //     headers: {
-    //         'content-type': 'application/x-www-form-urlencoded',
-    //         'Accept': 'application/json'
-    //     },
-    // }
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert(
         reqwest::header::CONTENT_TYPE,
@@ -63,22 +65,40 @@ pub async fn auth_handler(
         reqwest::header::ACCEPT,
         reqwest::header::HeaderValue::from_static("application/json"),
     );
+
     let response = req_client
         .post(url)
-        .multipart(form)
+        .form(&params)
         .headers(headers)
         .send()
         .await
         .unwrap()
-        .json::<serde_json::Value>()
+        .json::<TokenResponse>()
         .await
         .unwrap();
     println!("Response: {:?}", response);
+    let rt = response.refresh_token.unwrap();
 
-    // actor.sender.send(InternalRequest::GetUser { rt: (), res: () }});
 
-    Ok(body)
+    cookies.add(Cookie::new(AUTH_COOKIE, rt.clone()));
+    let (send, recv) = oneshot::channel();
+
+    let user_req = InternalRequest::GetUser { rt, res: send };
+    actor.sender.send(user_req);
+
+    let user_data = recv.await.unwrap();
+
+    Ok(Json(user_data))
 }
+#[derive(Debug, Serialize, Deserialize)]
+struct TokenResponse {
+    access_token: String,
+    token_type: String,
+    expires_in: i32,
+    refresh_token: Option<String>,
+    scope: String,
+}
+
 
 pub async fn refresh_games(cookies: Cookies) -> Result<Json<Value>> {
     let body = Json(json!({
@@ -152,4 +172,3 @@ pub struct CodeRequestDTO {
 
 struct CodeResponseDTO {}
 
-struct UserData {}

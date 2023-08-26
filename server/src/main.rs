@@ -1,19 +1,22 @@
 use std::net::SocketAddr;
 
+use async_session::chrono::RoundingError;
 use axum::{
+    extract::State,
+    middleware,
     routing::{get, post},
-    Router, Extension, extract::State,
+    Extension, Router,
 };
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use tracing::debug;
 
-use crate::webserver::{auth_handler, game_sse_handler, refresh_games};
+use crate::webserver::{auth::main_response_mapper, auth_handler, game_sse_handler, refresh_games};
 
 mod actor;
 mod discord;
 mod error;
-mod webserver;
 mod models;
+mod webserver;
 
 #[tokio::main]
 async fn main() {
@@ -28,16 +31,19 @@ async fn main() {
     let req_client = reqwest::Client::new();
 
     let mut actor = actor::Actor::new();
+    let api = Router::new()
+        .route("/game_sse", get(game_sse_handler))
+        .route("/refresh_games", get(refresh_games));
+        // Add context middleware
     let app = Router::new()
         .route("/auth", post(auth_handler))
-        .route("/game_sse", get(game_sse_handler))
-        .route("/refresh_games", get(refresh_games))
+        .nest("/api", api)
         .with_state(req_client)
+        .layer(middleware::map_response(main_response_mapper))
         .layer(Extension(actor.get_ref()))
         .layer(CookieManagerLayer::new());
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     tracing::debug!("listening on {}", addr);
-
 
     let mut client = discord::build_client(actor.get_ref()).await;
 
@@ -45,13 +51,11 @@ async fn main() {
         actor.run().await;
     });
 
-
     tokio::spawn(async move {
         if let Err(why) = client.start().await {
             println!("An error occurred while running the client: {:?}", why);
         }
     });
-
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
