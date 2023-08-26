@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use async_session::chrono::RoundingError;
 use axum::{
     extract::State,
     middleware,
@@ -30,10 +31,13 @@ async fn main() {
     let req_client = reqwest::Client::new();
 
     let mut actor = actor::Actor::new();
+    let api = Router::new()
+        .route("/game_sse", get(game_sse_handler))
+        .route("/refresh_games", get(refresh_games));
+        // Add context middleware
     let app = Router::new()
         .route("/auth", post(auth_handler))
-        .route("/game_sse", get(game_sse_handler))
-        .route("/refresh_games", get(refresh_games))
+        .nest("/api", api)
         .with_state(req_client)
         .layer(middleware::map_response(main_response_mapper))
         .layer(Extension(actor.get_ref()))
