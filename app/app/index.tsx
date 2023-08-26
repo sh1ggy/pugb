@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { userDataAtom, userGuildsAtom } from "../lib/store";
+import { userDataAtom, userGuildsAtom, userGamesAtom } from "../lib/store";
 import { UserDataDTO } from "../lib/types";
 import { useAtom } from 'jotai';
 import { Stack, Button, Text, View, XStack, YStack, Image } from 'tamagui';
@@ -26,6 +26,7 @@ export default function Pugb() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
   const [userData, setUserData] = useAtom(userDataAtom);
   const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
+  const [userGames, setUserGames] = useAtom(userGamesAtom);
 
   const [request, response, promptAsync] = useAuthRequest(
     {
@@ -63,9 +64,10 @@ export default function Pugb() {
           setUserGuilds(jsonres.guilds);
           const { guilds, ...userDataTemp } = jsonres;
           setUserData(userDataTemp);
+          setUserGames(userDataTemp.games);
         }
         catch (e) {
-          console.log(e);
+          console.log(JSON.stringify(e, null, 2));
         }
       };
       codeRequestFn();
