@@ -8,7 +8,9 @@ import { Link, router } from 'expo-router';
 // import { players, userData } from '../../lib/mock'
 import { players } from '../../lib/mock'
 import { Avatar } from 'tamagui'
-import { Player } from '../../lib/types';
+import { GameState, Player } from '../../lib/types';
+import { GestureEvent, PinchGestureHandler, PinchGestureHandlerEventPayload } from 'react-native-gesture-handler';
+
 
 export default function Game() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
@@ -20,7 +22,10 @@ export default function Game() {
   const [permission, requestPermission] = Camera.useCameraPermissions();
   const [capturedImage, setCapturedImage] = useState<CameraCapturedPicture>();
   const [killee, setKillee] = useState<Player | null>(null);
-  const [isImageSaving, setIsImageSaving] = useState<boolean>(false)
+  const [isImageSaving, setIsImageSaving] = useState<boolean>(false);
+  const [isCameraLoading, setIsCameraLoading] = useState<boolean>(false);
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [zoom, setZoom] = useState(0);
   const dead = false;
 
   function toggleCameraType() {
@@ -31,6 +36,7 @@ export default function Game() {
     const eventSource = new EventSource(`${SERVER_URL}/game_sse`);
     eventSource.addEventListener('message', (event) => {
       console.log({ event });
+      setGameState(event.data);
     })
     eventSource.addEventListener('close', (event) => {
       console.log({ event })
@@ -54,13 +60,13 @@ export default function Game() {
     if (!cameraRef.current) return
     setIsImageSaving(true);
     const photo = await cameraRef.current.takePictureAsync({ base64: false, quality: 0.1, skipProcessing: true, });
-    setIsImageSaving(false);
     setCapturedImage(photo);
+    setIsImageSaving(false);
   }
 
   const sendPicture = async () => {
     if (!capturedImage || !killee) return;
-    console.log({capturedImage,killee});
+    console.log({ capturedImage, killee });
     const data = new FormData();
     // const fileName = capturedImage.uri.split('/').pop();
     // const fileType = fileName.split('.').pop();
@@ -88,100 +94,118 @@ export default function Game() {
     }
   }
 
-  return (
-    <YStack bg={'#23252c'} flex={1} jc={'center'} ai={'center'} space={'$3'}>
-      <YStack ai={'center'} jc={'center'}>
-        < XStack ai={'flex-start'} >
-          <YStack zi={'$5'} p={'$2'} gap={'$3'}>
-            <Text ta={'left'} fos={'$6'} p={'$2'} col={'#000'} color={'white'}>{userData?.username}</Text>
-            {
-              dead &&
-              <>
-                <Text ta={'center'} fos={'$5'} p={'$2'} col={'#000'} color={'white'}>You are dead</Text>
-                <Text ta={'center'} fos={'$2'} p={'$2'} col={'#000'} color={'white'}>Take a selfie at McDonalds to revive yourself</Text>
-              </>
-            }
+  const changeZoom = (e: GestureEvent<PinchGestureHandlerEventPayload>) => {
+    if (e.nativeEvent.scale > 1) {
+      setZoom(0.02);
+    }
+    if (e.nativeEvent.scale < 1 && zoom > 0) {
+      setZoom(0);
+    }
+  }
 
-            {userGuilds?.map((guild) => {
-              <Text color={'white'}>guilds {guild}</Text>
-            })}
-          </YStack>
-        </XStack >
-        {/* <Button
+  return (
+    <>
+      {isImageSaving &&
+        // <Spinner pos={'absolute'} zi={'$5'} size="large" color="#5462eb"></Spinner>
+        <View pos={'absolute'} bg={'black'} zi={'$5'} br={'$3'}>
+          <Text p={'$3'} color="#5462eb">Taking Photo</Text>
+        </View>
+      }
+      <YStack bg={'#23252c'} flex={1} jc={'center'} ai={'center'} space={'$3'}>
+        <YStack ai={'center'} jc={'center'}>
+          < XStack ai={'flex-start'} >
+            <YStack zi={'$5'} p={'$2'} gap={'$3'}>
+              <Text ta={'left'} fos={'$6'} p={'$2'} col={'#000'} color={'white'}>{userData?.username}</Text>
+              {
+                dead &&
+                <>
+                  <Text ta={'center'} fos={'$5'} p={'$2'} col={'#000'} color={'white'}>You are dead</Text>
+                  <Text ta={'center'} fos={'$2'} p={'$2'} col={'#000'} color={'white'}>Take a selfie at McDonalds to revive yourself</Text>
+                </>
+              }
+
+              {userGuilds?.map((guild) => {
+                <Text color={'white'}>guilds {guild}</Text>
+              })}
+            </YStack>
+          </XStack >
+          {/* <Button
           onPress={() => { startEventSource() }}
           bg={'#5462eb'}>Test SSE
         </Button> */}
-      </YStack >
+        </YStack >
 
-
-      <Stack>
         {!capturedImage ?
-          <YStack>
-            <Camera
-              ref={cameraRef}
-              type={type}
-              style={{ width: 200, height: 300 }}
-              autoFocus={!(Platform.OS == 'android')}
-            >
-              {isImageSaving &&
-                <Stack flex={1} ai={'center'} jc={'center'}>
-                  <Spinner bg={'black'} br={'$3'} size="large" color="#5462eb"></Spinner>
-                </Stack>
-              }
-            </Camera>
-            <Button bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
-            <Button bg={'black'} onPress={takePicture}>Shoot</Button>
-          </YStack>
+          <PinchGestureHandler onGestureEvent={(e) => {changeZoom(e)}}>
+            <YStack>
+              <Camera
+                ref={cameraRef}
+                type={type}
+                style={{ width: 300, height: 400 }}
+                autoFocus={!(Platform.OS == 'android')}
+                onCameraReady={() => setIsCameraLoading(true)}
+                zoom={zoom}
+              />
+              <Button bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
+              <Button bg={'black'} onPress={takePicture} disabled={isCameraLoading ? false : true}>Shoot</Button>
+            </YStack>
+          </PinchGestureHandler>
           :
           <YStack>
             <Image
               source={{
                 uri: capturedImage?.uri
               }}
-              zi={'$5'} w={200} h={300}
+              zi={'$5'} w={300} h={400}
             />
-            <Button bg={'black'} onPress={() => { setCapturedImage(undefined) }}>Retake</Button>
+            <Button bg={'black'} onPress={() => {
+              setCapturedImage(undefined);
+              setKillee(null);
+            }}>Retake</Button>
           </YStack>
         }
+        {killee &&
+          <Button
+            onPress={sendPicture}
+            bg={'#8b89ac'}>Send Photo
+          </Button>
+        }
+
+
+        {capturedImage && !dead &&
+          <ScrollView maxHeight={'$6'} horizontal directionalLockEnabled={true} automaticallyAdjustContentInsets={false}>
+            <XStack gap={'$2'} maxHeight={'$6'}>
+              {!killee &&
+                players?.map((player) => {
+                  return (
+                    <Avatar key={player.id}
+                      circular size="$6"
+                      pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
+                      onPress={() => setKillee(player)}>
+                      <Avatar.Image src={player.avatar} />
+                      <Avatar.Fallback bc="#55607b" />
+                    </Avatar>
+                  )
+                })
+              }
+              {killee &&
+                <Avatar
+                  circular size="$6"
+                  pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
+                  onPress={() => setKillee(null)}>
+                  <Avatar.Image src={killee?.avatar} />
+                  <Avatar.Fallback bc="red" />
+                </Avatar>
+              }
+            </XStack>
+          </ScrollView>
+        }
+
         <Button
-          onPress={sendPicture}
-          bg={'#8b89ac'}>Send Photo
+          onPress={() => router.push('/select')}
+          bg={'#5462eb'}>Back
         </Button>
-      </Stack>
-
-      {capturedImage && !dead &&
-        <ScrollView maxHeight={'$6'} horizontal directionalLockEnabled={true} automaticallyAdjustContentInsets={false}>
-          <XStack gap={'$2'} maxHeight={'$6'}>
-            {!killee &&
-              players?.map((player) => {
-                return (
-                  <Avatar key={player.id}
-                    circular size="$6"
-                    pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
-                    onPress={() => setKillee(player)}>
-                    <Avatar.Image src={player.avatar} />
-                    <Avatar.Fallback bc="#55607b" />
-                  </Avatar>
-                )
-              })
-            }
-            {killee &&
-              <Avatar
-                circular size="$6"
-                pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
-                onPress={() => setKillee(null)}>
-                <Avatar.Image src={killee?.avatar} />
-                <Avatar.Fallback bc="red" />
-              </Avatar>
-            }
-          </XStack>
-        </ScrollView>
-      }
-
-      <Button
-        onPress={() => router.push('/select')}
-        bg={'#5462eb'}>Back
-      </Button>
-    </YStack >
+      </YStack >
+    </>
   )
 }
