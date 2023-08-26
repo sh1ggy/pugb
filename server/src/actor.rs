@@ -53,6 +53,11 @@ pub enum InternalRequest {
         image: Vec<u8>,
         res: oneshot::Sender<Result<()>>,
     },
+    Join {
+        game_id: u64,
+        user: User,
+        res: oneshot::Sender<Result<()>>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +66,11 @@ pub enum InternalBroadcast {
     Test { msg: Message },
     // This is why you might want multiple broadcasters per game, or an mpsc per connection
     Kill { killfeed: Vec<Kill>, game_id: u64 },
+    Died {
+        killer: String,
+        killee: String,
+        game_id: u64,
+    },
 }
 
 fn time() -> u128 {
@@ -217,6 +227,35 @@ impl Actor {
                         }
                     }
                 }
+                InternalRequest::Join { game_id, user, res } =>  {
+                    let ctx = if let Some(ctx) = self.ctx.as_ref() {
+                        ctx
+                    } else {
+                        continue;
+                    };
+
+                    let chan_id = ChannelId(game_id);
+
+                    match self.games.get_mut(&chan_id) {
+                        Some(game) => {
+                            let user_id = user.id.clone();
+                            let player = Player {
+                                active: crate::models::PlayerActive::NotActive,
+                                state: crate::models::PlayerState::Alive,
+                                user,
+                            };
+                            game.players.insert(user_id, player);
+                            res.send(Ok(())).unwrap();
+                        }
+                        None => {
+                            res.send(Err(Error::BadRequestInvalidParams {
+                                inner: format!("No Game of id {}", chan_id),
+                            }))
+                            .unwrap();
+                            continue;
+                        }
+                    }
+                },
             }
         }
     }

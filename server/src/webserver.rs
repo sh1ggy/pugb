@@ -120,6 +120,7 @@ pub async fn game_sse_handler(
     cookies: Cookies,
 ) -> Sse<impl Stream<Item = core::result::Result<Event, Infallible>>> {
     println!("Cookies: {:?}", cookies.get("hello_world"));
+    let user = ctx_resolver(actor.clone(), &cookies).await;
     let mut rx = actor.broadcast.subscribe();
     let thign = Event::default().json_data("Hello, world!").unwrap().id("1");
     let guard = SSEGuard {
@@ -153,6 +154,13 @@ pub async fn game_sse_handler(
                             .json_data(killfeed)
                             .unwrap();
                         },
+                        InternalBroadcast::Died {
+                            killer,
+                            killee,
+                            game_id,
+                        } => {
+
+                        }
 
                     }
 
