@@ -59,6 +59,7 @@ export default function Game() {
   }
 
   const sendPicture = async () => {
+    // TODO conditionaly render this button so it doesnt appear when killee isnt selected
     if (!capturedImage || !killee) return;
     console.log({capturedImage,killee});
     const data = new FormData();

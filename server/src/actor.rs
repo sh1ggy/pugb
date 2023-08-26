@@ -2,12 +2,13 @@ use std::collections::HashMap;
 
 use serde_json::value::Index;
 use serde_json::{from_value, Value};
-use serenity::model::prelude::{GuildChannel, Message, Guild, GuildId};
+use serenity::http::Http;
+use serenity::model::prelude::{Guild, GuildChannel, GuildId, Message, AttachmentType};
 use serenity::model::user::User;
 use tokio::sync::{broadcast, mpsc, oneshot};
 
 use crate::error::{Error, Result};
-use crate::models::{DiscordTokenResponse, GuildDTO, PremiumType, UserData, UserDataDTO};
+use crate::models::{DiscordTokenResponse, Game, GuildDTO, PremiumType, UserData, UserDataDTO, Player};
 
 type InternalRequester = tokio::sync::mpsc::UnboundedSender<InternalRequest>;
 type InternalBroadcaster = tokio::sync::broadcast::Sender<InternalBroadcast>;
@@ -28,7 +29,7 @@ pub enum InternalRequest {
     Start_Game {
         msg: Message,
         thread: GuildChannel,
-        ctx: serenity::http::Http,
+        
     },
     // -- Actor broadcasts
 
@@ -38,20 +39,16 @@ pub enum InternalRequest {
         res: oneshot::Sender<Result<UserDataDTO>>,
     },
     InitServer {
-        guilds: Vec<GuildId>
-    }
+        guilds: Vec<GuildId>,
+        ctx: Http
+    },
+    Shoot { image: Vec<u8>},
 }
 
 #[derive(Debug, Clone)]
 pub enum InternalBroadcast {
     // -- Actor broadcasts
     Test { msg: Message },
-}
-
-pub struct Game {
-    id: u64,
-    name: String,
-    // players: Vec<Player>,
 }
 
 pub struct Actor {
@@ -65,7 +62,9 @@ pub struct Actor {
     // pub users: HashMap<String, UserData>,
     pub users: HashMap<String, UserDataDTO>,
     pub games: Vec<Game>,
-    pub guilds: Option<Vec<GuildId>>,
+    // pub guilds: Option<Vec<GuildId>>,
+    pub guilds: Vec<GuildId>,
+    pub ctx: Option<Http>
 }
 
 impl Actor {
@@ -83,7 +82,8 @@ impl Actor {
             users: HashMap::new(),
             http_req: reqwest::Client::new(),
             games: Vec::new(),
-            guilds: None
+            guilds: Vec::new(),
+            ctx: None
         }
     }
 
@@ -110,11 +110,42 @@ impl Actor {
                     let user = self.get_user(rt).await;
                     res.send(user).unwrap();
                 }
-                InternalRequest::Start_Game { msg, thread, ctx } => todo!(),
-                InternalRequest::InitServer { guilds } => self.guilds = Some(guilds)
+                InternalRequest::Start_Game { msg, thread } => {
+                    let mut game = Game {
+                        players: HashMap::new(),
+                        thread
+                    };
+                    let user = msg.author;
+                    let user_id = user.id.clone();
+                    let player = Player {
+                        active: crate::models::PlayerActive::NotActive,
+                        state: crate::models::PlayerState::Alive,
+                        user
+                    };
+                    game.players.insert(user_id, player);
+                    self.games.push(game);
+                },
+                InternalRequest::InitServer { guilds ,ctx } => {self.guilds = guilds;
+                  self.ctx = Some(ctx);  
+                },
+                InternalRequest::Shoot {image, } => {
+                    let ctx = if let Some(ctx) = self.ctx.as_ref() {
+                        ctx
+                    } else {
+                        continue;
+                    };
+                    
+                    self.games[0].thread.send_message(ctx, move|m| {
+                        let attatchment = AttachmentType::Bytes { data: image.into(), filename: "Hey man".into() };
+                        m.add_file(attatchment)
+                    });
+                    // let f = [(&tokio::fs::File::open("image.png").await?, "image.png")];
+                    // self.games[0].thread.send_files(http, files, f)
+                }
             }
         }
     }
+
 
     pub async fn get_user(&mut self, rt: String) -> Result<UserDataDTO> {
         // Get user from hashmap, if doesnt exist make request to discord api
@@ -142,7 +173,6 @@ impl Actor {
     }
 
     async fn get_user_guilds(&self, access_token: &str) -> Result<Vec<GuildDTO>> {
-
         let url = format!("https://discordapp.com/api/users/@me/guilds");
 
         let mut headers = reqwest::header::HeaderMap::new();
@@ -164,12 +194,10 @@ impl Actor {
             .await
             .unwrap();
 
-        
         let response = response.json::<Value>().await.unwrap();
         println!("Response: {:?}", &response);
 
         Err(Error::AuthFailIncorrectCode)
-
     }
 
     async fn get_user_from_api(&self, access_token: &str, rt: &str) -> Result<UserData> {

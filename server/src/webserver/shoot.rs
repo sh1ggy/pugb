@@ -1,12 +1,12 @@
 use std::{io::{self}};
 use tokio::{fs::File, io::BufWriter};
 
-use axum::{extract::{Path, BodyStream, Multipart}, body::Bytes, BoxError};
+use axum::{extract::{Path, BodyStream, Multipart}, body::Bytes, BoxError, Extension};
 use futures::{Stream, TryStreamExt};
 use http::StatusCode;
 use tokio_util::io::StreamReader;
 
-use crate::error::{Error, Result};
+use crate::{error::{Error, Result}, actor::{ActorRef, InternalRequest}};
 
 // https://github.com/tokio-rs/axum/blob/24f0f3eae8054c7a495cd364087f2dd7fa8b87e0/examples/stream-to-file/src/main.rs
 pub async fn save_request_body(
@@ -19,7 +19,9 @@ pub async fn save_request_body(
     // "Hello, world!".to_string()
 }
 
-pub async fn shoot_request(mut multipart: Multipart) -> Result<()> {
+pub async fn shoot_request(
+    Extension(actor): Extension<ActorRef>,
+    mut multipart: Multipart) -> Result<()> {
     while let Some(field) = multipart.next_field().await.unwrap() {
         println!("File: {:?}", field);
         let field_name = if let Some(field_name) = field.name() {
@@ -29,10 +31,14 @@ pub async fn shoot_request(mut multipart: Multipart) -> Result<()> {
             continue;
         };
         if (field_name == "image") {
-            stream_to_file(&"image", field).await?;
+            // stream_to_file(&"image", field).await?;
+            let bytes_struct: Bytes = field.bytes().await.unwrap();
+            let bytes: Vec<u8> = bytes_struct.into();
+            actor.sender.send(InternalRequest::Shoot { image: bytes }).unwrap()
         } else {
             continue;
         }
+
 
 
         // let file_name = if let Some(file_name) = field.file_name() {
@@ -63,8 +69,8 @@ where
 
     async {
         // Convert the stream into an `AsyncRead`.
-        // let body_with_io_error = stream.map_err(|err| io::Error::new(io::ErrorKind::Other, err));
-        let body_with_io_error = stream.map_err(|e| );
+        let body_with_io_error = stream.map_err(|err| io::Error::new(io::ErrorKind::Other, err));
+        // let body_with_io_error = stream.map_err(|e| );
         let body_reader = StreamReader::new(body_with_io_error);
         futures::pin_mut!(body_reader);
 
