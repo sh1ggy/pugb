@@ -9,6 +9,7 @@ import { Accordion } from 'tamagui';
 
 export default function Select() {
   // const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
+
   return (
     <Stack bg={'#23252c'} space={"$4"} flex={1} jc={'center'} ai={'center'} my={'$10'}>
       <ScrollView>
@@ -27,7 +28,7 @@ export default function Select() {
                     )}
                   </Accordion.Trigger>
                   <Accordion.Content>
-                    <Paragraph onPress={() => router.push(`/camera/${guild.name}`)}>
+                    <Paragraph onPress={() => router.push(`/game/${guild.name}`)}>
                       {guild.id}
                     </Paragraph>
                   </Accordion.Content>
