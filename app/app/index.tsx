@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { userDataAtom, userGuildsAtom, userGamesAtom } from "../lib/store";
-import { UserDataDTO } from "../lib/types";
+import { JSONError, UserDataDTO } from "../lib/types";
 import { useAtom } from 'jotai';
-import { Stack, Button, Text, View, XStack, YStack, Image } from 'tamagui';
+import { Stack, Button, Text, View, XStack, YStack, Image, Spinner } from 'tamagui';
 
 import { Link } from 'expo-router';
 import { router } from 'expo-router';
@@ -27,7 +27,8 @@ export default function Pugb() {
   const [userData, setUserData] = useAtom(userDataAtom);
   const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const [userGames, setUserGames] = useAtom(userGamesAtom);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [forceAuth, setForceAuth] = useState(false);
 
   const [request, response, promptAsync] = useAuthRequest(
     {
@@ -77,43 +78,63 @@ export default function Pugb() {
 
   useEffect(() => {
     const userRequestFn = async () => {
+      let res;
       try {
         // TODO validation
         const URL = `${SERVER_URL}/api/get_user`
-        const res = await fetch(URL);
-        const jsonres: UserDataDTO = await res.json();
+        setIsLoading(true);
+        res = await fetch(URL);
+        const jsonres: any = await res.json();
+        if (jsonres.error) {
+          const errjson: JSONError = jsonres;
+          console.log(JSON.stringify(errjson, null, 2))
+          setForceAuth(true);
+          setIsLoading(false);
+          return;
+        }
+        const succjson: UserDataDTO = jsonres;
+        setIsLoading(false);
         let log = JSON.stringify(res, null, 2);
         let secondLog = JSON.stringify(request, null, 2);
 
-        console.log({ jsonres });
+        console.log({ succjson });
 
-        setUserGuilds(jsonres.guilds);
-        const { guilds, ...userDataTemp } = jsonres;
+        setUserGuilds(succjson.guilds);
+        const { guilds, ...userDataTemp } = succjson;
         setUserData(userDataTemp);
         setUserGames(userDataTemp.games);
-        setIsLoaded(true);
       }
       catch (e) {
-        console.log(JSON.stringify(e, null, 2));
+        console.log("FORCE OAUTH", JSON.stringify(e, null, 2));
+        // TODO handle error
+        // const jsonres: JSONError | undefined = await (res?.json); 
+        setForceAuth(true);
       }
     }
     userRequestFn();
   }, [])
 
   return (
-    <Stack bg={'#23252c'} space={"$4"} flex={1} jc={'center'} ai={'center'}>
-      <Text>{JSON.stringify(userData, null, 2)}</Text>
-      {
-        !isLoaded &&
-        <Button
-          onPress={() => { promptAsync(); }}
-          bg={'#5462eb'}>Login
-        </Button>
+    <Stack bg={'#23252c'} space={"$4"} flex={1} jc={'center'} ai={'center'} gap={'$3'}>
+      {isLoading ?
+        <Spinner pos={'absolute'} zi={'$5'} size="large" color="#5462eb"></Spinner>
+        :
+        <>
+          {forceAuth &&
+            <>
+              <Text mx={'$3'} textAlign="center" fos={'$5'} fontFamily={'$body'} color={'#8b89ac'}>Please sign in</Text>
+              <Button
+                onPress={() => { promptAsync(); }}
+                bg={'#5462eb'}>Login
+              </Button>
+            </>
+          }
+          <Button
+            onPress={() => router.push('/select')}
+            bg={'#5462eb'}>Game Select
+          </Button>
+        </>
       }
-      <Button
-        onPress={() => router.push('/select')}
-        bg={'#5462eb'}>Game Select
-      </Button>
     </Stack >
   )
 }

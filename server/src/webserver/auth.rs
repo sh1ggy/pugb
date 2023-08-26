@@ -86,8 +86,7 @@ pub async fn main_response_mapper(
         println!("    ->> client_error_body: {client_error_body}");
 
         // Build the new response from the client_error_body
-        // Should use Bad request error status here
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(client_error_body)).into_response()
+        (StatusCode::BAD_REQUEST, Json(client_error_body)).into_response()
     });
 
     // Build and log the server log line.
