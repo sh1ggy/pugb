@@ -35,9 +35,15 @@ export enum PremiumType {
 
 export interface Game {
   id: string,
-  guildID: string,
-  thread: any,
+  thread: Thread,
   gameState: GameState,
+}
+
+export interface Thread {
+  name: string,
+  started_by: string,
+  id: string,
+  guildID: string,
 }
 
 

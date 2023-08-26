@@ -18,7 +18,7 @@ use tower_cookies::{Cookie, Cookies};
 
 use crate::{
     actor::{ActorRef, InternalBroadcast, InternalRequest},
-    models::{UserData, DiscordTokenResponse},
+    models::{UserData, DiscordTokenResponse, UserDataDTO},
 };
 
 use crate::error::{Error, Result};
@@ -33,7 +33,7 @@ pub async fn auth_handler(
     State(req_client): State<reqwest::Client>,
     Extension(actor): Extension<ActorRef>,
     Json(req): Json<CodeRequestDTO>,
-) -> Result<Json<UserData>> {
+) -> Result<Json<UserDataDTO>> {
     // ) -> Result<()> {
     // TODO do a join on the servres of the user and games that exist and send back to client
     let scopes = vec!["identify", "email", "guilds"];

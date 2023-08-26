@@ -51,6 +51,7 @@ async fn main() {
     tracing::debug!("listening on {}", addr);
 
     let mut client = discord::build_client(actor.get_ref()).await;
+    
 
     tokio::spawn(async move {
         actor.run().await;

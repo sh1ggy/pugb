@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use serde_json::value::Index;
 use serde_json::{from_value, Value};
-use serenity::model::prelude::Message;
+use serenity::model::prelude::{GuildChannel, Message, Guild, GuildId};
 use serenity::model::user::User;
 use tokio::sync::{broadcast, mpsc, oneshot};
 
 use crate::error::{Error, Result};
-use crate::models::{DiscordTokenResponse, PremiumType, UserData};
+use crate::models::{DiscordTokenResponse, GuildDTO, PremiumType, UserData, UserDataDTO};
 
 type InternalRequester = tokio::sync::mpsc::UnboundedSender<InternalRequest>;
 type InternalBroadcaster = tokio::sync::broadcast::Sender<InternalBroadcast>;
@@ -25,13 +25,21 @@ pub enum InternalRequest {
     Test {
         msg: Message,
     },
+    Start_Game {
+        msg: Message,
+        thread: GuildChannel,
+        ctx: serenity::http::Http,
+    },
     // -- Actor broadcasts
 
     // -- Actor Requests
     GetUser {
         rt: String,
-        res: oneshot::Sender<Result<UserData>>,
+        res: oneshot::Sender<Result<UserDataDTO>>,
     },
+    InitServer {
+        guilds: Vec<GuildId>
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -40,7 +48,7 @@ pub enum InternalBroadcast {
     Test { msg: Message },
 }
 
-struct Game {
+pub struct Game {
     id: u64,
     name: String,
     // players: Vec<Player>,
@@ -54,7 +62,10 @@ pub struct Actor {
     pub self_ref: ActorRef,
     pub http_req: reqwest::Client,
 
-    pub users: HashMap<String, UserData>,
+    // pub users: HashMap<String, UserData>,
+    pub users: HashMap<String, UserDataDTO>,
+    pub games: Vec<Game>,
+    pub guilds: Option<Vec<GuildId>>,
 }
 
 impl Actor {
@@ -71,7 +82,8 @@ impl Actor {
             receiver: mpsc_rx,
             users: HashMap::new(),
             http_req: reqwest::Client::new(),
-            // games: Vec::new(),
+            games: Vec::new(),
+            guilds: None
         }
     }
 
@@ -98,45 +110,76 @@ impl Actor {
                     let user = self.get_user(rt).await;
                     res.send(user).unwrap();
                 }
+                InternalRequest::Start_Game { msg, thread, ctx } => todo!(),
+                InternalRequest::InitServer { guilds } => self.guilds = Some(guilds)
             }
         }
     }
 
-    pub async fn get_user(&mut self, rt: String) -> Result<UserData> {
+    pub async fn get_user(&mut self, rt: String) -> Result<UserDataDTO> {
         // Get user from hashmap, if doesnt exist make request to discord api
         if let Some(user) = self.users.get(&rt) {
             return Ok(user.clone());
         } else {
             // Fetch the user from the API
-            let fetched_user = self.get_user_from_api(&rt).await?;
+            let user = self.refresh_user(rt.clone()).await?;
             // Store the fetched user in the cache
             // Save all details of user on the cache// TODO db
-            self.users.insert(rt, fetched_user.clone());
-            Ok(fetched_user)
+            self.users.insert(rt.clone(), user.clone());
+            Ok(user)
         }
     }
+    pub async fn refresh_user(&mut self, rt: String) -> Result<UserDataDTO> {
+        let mut access_token = self.get_access_token(&rt).await?;
+        access_token.insert_str(0, "Bearer ");
+        let fetched_user = self.get_user_from_api(&access_token, &rt).await?;
+        let user_guilds = self.get_user_guilds(&access_token).await?;
+        // Store the fetched user in the cache
+        // Save all details of user on the cache// TODO db
+        // self.users.insert(rt, fetched_user.clone());
+        // Ok(fetched_user)
+        Err(Error::AuthFailIncorrectCode)
+    }
 
-    async fn get_user_from_api(&self, rt: &str) -> Result<UserData> {
-        let url = format!("https://discord.com/api/v8/users/@me");
+    async fn get_user_guilds(&self, access_token: &str) -> Result<Vec<GuildDTO>> {
 
-        let client_id = std::env::var("CLIENT_ID").unwrap();
-        let client_secret = std::env::var("CLIENT_SECRET").unwrap();
-        // Make code request to get rt
-
-        // It requires a URL encoded form, not multipart
-        // let params = [("client_id", client_id), ("client_secret", client_secret)];
+        let url = format!("https://discordapp.com/api/users/@me/guilds");
 
         let mut headers = reqwest::header::HeaderMap::new();
 
-        // headers.insert(
-        //     reqwest::header::CONTENT_TYPE,
-        //     reqwest::header::HeaderValue::from_static("application/x-www-form-urlencoded"),
-        // );
-        let mut acces_token = self.get_access_token(rt).await?;
-        acces_token.insert_str(0, "Bearer ");
         headers.insert(
             reqwest::header::AUTHORIZATION,
-            reqwest::header::HeaderValue::from_str(&acces_token).unwrap(),
+            reqwest::header::HeaderValue::from_str(&access_token).unwrap(),
+        );
+        headers.insert(
+            reqwest::header::ACCEPT,
+            reqwest::header::HeaderValue::from_static("application/json"),
+        );
+
+        let response = self
+            .http_req
+            .get(url)
+            .headers(headers)
+            .send()
+            .await
+            .unwrap();
+
+        
+        let response = response.json::<Value>().await.unwrap();
+        println!("Response: {:?}", &response);
+
+        Err(Error::AuthFailIncorrectCode)
+
+    }
+
+    async fn get_user_from_api(&self, access_token: &str, rt: &str) -> Result<UserData> {
+        let url = format!("https://discord.com/api/v8/users/@me");
+
+        let mut headers = reqwest::header::HeaderMap::new();
+
+        headers.insert(
+            reqwest::header::AUTHORIZATION,
+            reqwest::header::HeaderValue::from_str(&access_token).unwrap(),
         );
         headers.insert(
             reqwest::header::ACCEPT,
@@ -156,7 +199,11 @@ impl Actor {
         // println!("Response: {:?}", &response.text().await.unwrap());
         let response = response.json::<Value>().await.unwrap();
 
-        let deserialized_enum: PremiumType = response["premium_type"].as_i64().unwrap().try_into().unwrap();
+        let deserialized_enum: PremiumType = response["premium_type"]
+            .as_i64()
+            .unwrap()
+            .try_into()
+            .unwrap();
         let user = UserData {
             // to string and clone is the same thing
             id: from_value(response["id"].clone()).unwrap(),
