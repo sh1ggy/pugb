@@ -1,13 +1,14 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { SplashScreen, Stack } from 'expo-router';
+import { SplashScreen } from 'expo-router';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { Provider } from "jotai"
 import config from '../tamagui.config'
-import { TamaguiProvider } from "tamagui"
+import { TamaguiProvider, Stack } from "tamagui"
 import { Slot } from 'expo-router';
+import Logo from "../assets/logo.svg";
 let customFonts = {
   'Righteous': require('../assets/Righteous-Regular.ttf')
 };
@@ -43,10 +44,13 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   return (
-    <Provider>
-      <TamaguiProvider config={config}>
-        <Slot/>
-      </TamaguiProvider>
-    </Provider>
+    <TamaguiProvider config={config}>
+      <Provider>
+        <Stack flex={1} ai={'center'} jc={'center'} bg={'#23252c'}>
+          <Logo width={50} style={{position: 'relative', top:0}} />
+          <Slot />
+        </Stack>
+      </Provider>
+    </TamaguiProvider>
   );
 }
