@@ -32,6 +32,12 @@ export enum PremiumType {
   NitroBasic,
 }
 
+export interface JSONError {
+  error: {
+    req_uuid: string, 
+    type: string,
+  }
+}
 
 export interface Game {
   thread: Thread,

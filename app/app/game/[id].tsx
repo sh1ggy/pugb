@@ -10,14 +10,13 @@ import { game, players } from '../../lib/mock'
 import { Avatar } from 'tamagui'
 import { GameState, Player } from '../../lib/types';
 import { GestureEvent, PinchGestureHandler, PinchGestureHandlerEventPayload } from 'react-native-gesture-handler';
-import { userData } from '../../lib/mock';
+// import { userData } from '../../lib/mock';
 
 export default function Game() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
-  // const [userData, setUserData] = useAtom(userDataAtom);
+  const [userData, setUserData] = useAtom(userDataAtom);
   const cameraRef = useRef<Camera | null>(null);
-  const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const [type, setType] = useState(CameraType.back);
   const [permission, requestPermission] = Camera.useCameraPermissions();
   const [capturedImage, setCapturedImage] = useState<CameraCapturedPicture>();
@@ -127,7 +126,6 @@ export default function Game() {
   return (
     <>
       {isImageSaving &&
-        // <Spinner pos={'absolute'} zi={'$5'} size="large" color="#5462eb"></Spinner>
         <View pos={'absolute'} bg={'black'} zi={'$5'} br={'$3'}>
           <Text p={'$3'} color="#5462eb">Taking Photo</Text>
         </View>
@@ -136,14 +134,14 @@ export default function Game() {
         <YStack ai={'center'} jc={'center'}>
           < XStack ai={'flex-start'} bg={'#8b89ac'} br={'$3'} p={'$1.5'}>
             <Avatar circular size="$3">
-              <Avatar.Image src={userData?.avatar} />
-              <Avatar.Fallback bc="red" />
+              <Avatar.Image src={`https://cdn.discordapp.com/avatars/${userData?.id}/${userData?.avatar}.png`} />
+              <Avatar.Fallback bc="#8b89ac" />
             </Avatar>
             <Text ta={'left'} fos={'$6'} p={'$2'} col={'#000'} color={'white'} textAlign='center' fontFamily={'$body'}>{userData?.username}</Text>
           </XStack >
           <YStack zi={'$5'} p={'$2'} gap={'$3'}>
             {
-              !dead &&
+              dead &&
               <>
                 <Text ta={'center'} fos={'$4'} p={'$1'} col={'#000'} color={'#e06c75'} fontFamily={'$body'}>You are dead, killed by {"xxx"}</Text>
                 <Text ta={'center'} fos={'$1'} p={'$1'} col={'#000'} color={'white'}>Take a selfie at McDonalds to revive yourself</Text>
