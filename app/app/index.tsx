@@ -27,6 +27,7 @@ export default function Pugb() {
   const [userData, setUserData] = useAtom(userDataAtom);
   const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const [userGames, setUserGames] = useAtom(userGamesAtom);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const [request, response, promptAsync] = useAuthRequest(
     {
@@ -58,9 +59,9 @@ export default function Pugb() {
           const jsonres: UserDataDTO = await res.json();
           let log = JSON.stringify(res, null, 2);
           let secondLog = JSON.stringify(request, null, 2);
-          
+
           console.log({ jsonres });
-          
+
           setUserGuilds(jsonres.guilds);
           const { guilds, ...userDataTemp } = jsonres;
           setUserData(userDataTemp);
@@ -74,13 +75,41 @@ export default function Pugb() {
     }
   }, [response, setUserData]);
 
+  useEffect(() => {
+    const userRequestFn = async () => {
+      try {
+        // TODO validation
+        const URL = `${SERVER_URL}/api/get_user`
+        const res = await fetch(URL);
+        const jsonres: UserDataDTO = await res.json();
+        let log = JSON.stringify(res, null, 2);
+        let secondLog = JSON.stringify(request, null, 2);
+
+        console.log({ jsonres });
+
+        setUserGuilds(jsonres.guilds);
+        const { guilds, ...userDataTemp } = jsonres;
+        setUserData(userDataTemp);
+        setUserGames(userDataTemp.games);
+        setIsLoaded(true);
+      }
+      catch (e) {
+        console.log(JSON.stringify(e, null, 2));
+      }
+    }
+    userRequestFn();
+  }, [])
+
   return (
     <Stack bg={'#23252c'} space={"$4"} flex={1} jc={'center'} ai={'center'}>
       <Text>{JSON.stringify(userData, null, 2)}</Text>
-      <Button
-        onPress={() => { promptAsync(); }}
-        bg={'#5462eb'}>Login
-      </Button>
+      {
+        !isLoaded &&
+        <Button
+          onPress={() => { promptAsync(); }}
+          bg={'#5462eb'}>Login
+        </Button>
+      }
       <Button
         onPress={() => router.push('/select')}
         bg={'#5462eb'}>Game Select
