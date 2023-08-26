@@ -26,7 +26,7 @@ export default function Game() {
   const [isCameraLoading, setIsCameraLoading] = useState<boolean>(false);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [zoom, setZoom] = useState(0);
-  const dead = false;
+  const [dead, setDead] = useState(false);
 
   function toggleCameraType() {
     setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
@@ -37,6 +37,14 @@ export default function Game() {
     eventSource.addEventListener('message', (event) => {
       console.log({ event });
       setGameState(event.data);
+    })
+    eventSource.addEventListener('killfeed', (event) => {
+      console.log({ event });
+      setGameState(event.data);
+    })
+    eventSource.addEventListener('death', (event) => {
+      console.log({ event });
+      setDead(true);
     })
     eventSource.addEventListener('close', (event) => {
       console.log({ event })
@@ -73,9 +81,12 @@ export default function Game() {
     // const fileType = fileName.split('.').pop();
     // https://github.com/expo/image-upload-example/issues/3#issuecomment-387263080
     const response = await fetch(capturedImage.uri);
-    const blob = await response.blob();
+    const picture = await response.blob();
+    // https://medium.com/@mwillbanks/react-expo-a-journey-of-uploading-raw-image-data-to-s3-7f308ee6989e
+    const imageData = new File([picture], `photo.jpg`);
 
-    data.append('image', blob);
+
+    data.append('image', picture);
     data.append('title', "image");
     data.append('killee', killee.id as string);
     try {
