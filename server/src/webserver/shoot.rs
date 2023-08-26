@@ -1,5 +1,5 @@
 use std::{io::{self}};
-use tokio::{fs::File, io::BufWriter};
+use tokio::{fs::File, io::BufWriter, sync::oneshot};
 
 use axum::{extract::{Path, BodyStream, Multipart}, body::Bytes, BoxError, Extension};
 use futures::{Stream, TryStreamExt};
@@ -9,17 +9,9 @@ use tokio_util::io::StreamReader;
 use crate::{error::{Error, Result}, actor::{ActorRef, InternalRequest}};
 
 // https://github.com/tokio-rs/axum/blob/24f0f3eae8054c7a495cd364087f2dd7fa8b87e0/examples/stream-to-file/src/main.rs
-pub async fn save_request_body(
-     Path(file_name): Path<String>,
-    request: BodyStream,
-) -> Result<()> {
-    println!("File name: {}", file_name);
-    println!("Body: {:?}", request);
-    stream_to_file(&file_name, request).await
-    // "Hello, world!".to_string()
-}
 
 pub async fn shoot_request(
+    Path(game_id): Path<u64>,
     Extension(actor): Extension<ActorRef>,
     mut multipart: Multipart) -> Result<()> {
     while let Some(field) = multipart.next_field().await.unwrap() {
@@ -30,26 +22,18 @@ pub async fn shoot_request(
         } else {
             continue;
         };
-        println!("Field_name: {field_name}");
+        // println!("Field_name: {field_name}");
         if (field_name == "image") {
             // stream_to_file(&"image", field).await?;
             let bytes_struct: Bytes = field.bytes().await.unwrap();
             println!("HEY MAN, GOT IMAGE {:?}", bytes_struct);
             let bytes: Vec<u8> = bytes_struct.into();
-            actor.sender.send(InternalRequest::Shoot { image: bytes }).unwrap();
+            let (send, recv) = oneshot::channel();
+            actor.sender.send(InternalRequest::Shoot { image: bytes, res: send}).unwrap();
+            recv.await.unwrap()?;
         } else {
             continue;
         }
-
-
-
-        // let file_name = if let Some(file_name) = field.file_name() {
-        //     file_name.to_owned()
-        // } else {
-        //     continue;
-        // };
-
-        // stream_to_file(&field_name, field).await?;
     }
 
     Ok(())

@@ -28,10 +28,11 @@ pub enum PremiumType {
     NitroBasic,
 }
 
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserDataDTO {
-    user: UserData,
-    guilds: Vec<GuildDTO>,
+    pub user: UserData,
+    pub guilds: Vec<GuildDTO>,
     // games: Vec<Game>,
 }
 
@@ -39,7 +40,7 @@ pub struct UserDataDTO {
 pub struct GuildDTO {
     id: String,
     name: String,
-    icon: String,
+    icon: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,6 +57,23 @@ pub struct Game {
     pub thread: GuildChannel,
     pub players: HashMap<UserId, Player>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+
+pub struct Kill {
+    pub id: String,
+    pub time: u64,
+    pub killerId: String,
+    pub killeeId: String,
+    pub image: String,
+    pub state: KillState, 
+}
+#[derive(Debug, Serialize, Deserialize)]
+
+pub enum KillState {
+    Contested,
+    Normal,
+  }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Player {

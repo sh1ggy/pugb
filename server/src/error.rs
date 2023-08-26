@@ -18,7 +18,7 @@ pub enum Error {
 
 	// BadRequestInvalidStream
 	BadRequestInvalidStream {inner: String},
-
+	BadRequestInvalidParams {inner: String},
 
 	// -- Model errors.
 	// TicketDeleteFailIdNotFound { id: u64 },

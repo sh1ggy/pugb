@@ -91,10 +91,14 @@ pub async fn auth_handler(
         return Err(Error::AuthFailIncorrectCode);
     }
 }
-pub async fn get_refreshed_user(cookies: Cookies) -> Result<Json<Value>> {
+pub async fn get_refreshed_user(Path(thread_id): Path<u64>, cookies: Cookies) -> Result<Json<Value>> {
+    
     let body = Json(json!({
         "result": {
             "success": true
+        },
+        "game": {
+            "id": thread_id
         }
     }));
     // Err(Error::AuthFailNoAuthTokenCookie)
