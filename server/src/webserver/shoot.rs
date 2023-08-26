@@ -19,8 +19,9 @@ pub async fn save_request_body(
     // "Hello, world!".to_string()
 }
 
-async fn shoot(mut multipart: Multipart) -> Result<()> {
+pub async fn shoot_request(mut multipart: Multipart) -> Result<()> {
     while let Some(field) = multipart.next_field().await.unwrap() {
+        println!("File: {:?}", field);
         let file_name = if let Some(file_name) = field.file_name() {
             file_name.to_owned()
         } else {
@@ -30,7 +31,6 @@ async fn shoot(mut multipart: Multipart) -> Result<()> {
         stream_to_file(&file_name, field).await?;
     }
 
-    // Ok(Redirect::to("/"))
     Ok(())
 }
 

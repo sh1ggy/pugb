@@ -97,7 +97,8 @@ pub async fn get_refreshed_user(cookies: Cookies) -> Result<Json<Value>> {
             "success": true
         }
     }));
-    Err(Error::AuthFailNoAuthTokenCookie)
+    // Err(Error::AuthFailNoAuthTokenCookie)
+    Ok(body)
 }
 
 
