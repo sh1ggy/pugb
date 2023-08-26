@@ -71,8 +71,11 @@ export default function Game() {
     const data = new FormData();
     // const fileName = capturedImage.uri.split('/').pop();
     // const fileType = fileName.split('.').pop();
+    // https://github.com/expo/image-upload-example/issues/3#issuecomment-387263080
+    const response = await fetch(capturedImage.uri);
+    const blob = await response.blob();
 
-    data.append('image', capturedImage.uri);
+    data.append('image', blob);
     data.append('title', "image");
     data.append('killee', killee.id as string);
     try {
@@ -91,7 +94,7 @@ export default function Game() {
       console.log({ jsonres });
     }
     catch (e) {
-      console.log(e);
+      console.log(JSON.stringify(e, null, 2));
     }
   }
 
@@ -116,7 +119,7 @@ export default function Game() {
         <YStack ai={'center'} jc={'center'}>
           < XStack ai={'flex-start'} >
             <YStack zi={'$5'} p={'$2'} gap={'$3'}>
-              <Text ta={'left'} fos={'$6'} p={'$2'} col={'#000'} color={'white'}>{userData?.username}</Text>
+              <Text ta={'left'} fos={'$6'} p={'$2'} col={'#000'} color={'white'} fontFamily={'$body'}>{userData?.username}</Text>
               {
                 dead &&
                 <>
@@ -137,7 +140,7 @@ export default function Game() {
         </YStack >
 
         {!capturedImage ?
-          <PinchGestureHandler onGestureEvent={(e) => {changeZoom(e)}}>
+          <PinchGestureHandler onGestureEvent={(e) => { changeZoom(e) }}>
             <YStack>
               <Camera
                 ref={cameraRef}
@@ -148,7 +151,7 @@ export default function Game() {
                 zoom={zoom}
               />
               <Button bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
-              <Button bg={'black'} onPress={takePicture} disabled={isCameraLoading ? false : true}>Shoot</Button>
+              <Button bg={'black'} my={'$3'} onPress={takePicture} disabled={isCameraLoading ? false : true}>Shoot</Button>
             </YStack>
           </PinchGestureHandler>
           :
@@ -163,15 +166,14 @@ export default function Game() {
               setCapturedImage(undefined);
               setKillee(null);
             }}>Retake</Button>
+            {killee &&
+              <Button
+                onPress={sendPicture}
+                bg={'#8b89ac'}>Send Photo
+              </Button>
+            }
           </YStack>
         }
-        {killee &&
-          <Button
-            onPress={sendPicture}
-            bg={'#8b89ac'}>Send Photo
-          </Button>
-        }
-
 
         {capturedImage && !dead &&
           <ScrollView maxHeight={'$6'} horizontal directionalLockEnabled={true} automaticallyAdjustContentInsets={false}>

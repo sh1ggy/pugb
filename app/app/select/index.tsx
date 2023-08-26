@@ -12,6 +12,9 @@ export default function Select() {
 
   return (
     <Stack bg={'#23252c'} space={"$4"} flex={1} jc={'center'} ai={'center'} my={'$10'}>
+      <Text my={'$3'} mx={'$3'} textAlign="center" fos={'$10'} fontFamily={'$body'} color={'#8b89ac'}>Select Game</Text>
+      <Text mb={'$3'} mx={'$3'} textAlign="center">Please invite PUGB Bot to your Discord server of choice and run the '@start' command to instantiate a game</Text>
+      <Text textAlign="center" mb={'$3'} mx={'$3'}>Press Refresh in order to get an updated list of servers that have active games</Text>
       <ScrollView>
         <Accordion space={'$4'} br={'$3'} overflow="hidden" width="$15" type="multiple">
           {
