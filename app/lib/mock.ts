@@ -1,15 +1,11 @@
-import { Guild, PremiumType, UserData, Player, PlayerState, GameState } from "./types"
+import { Guild, PremiumType, UserData, Player, PlayerState, GameState, Game, Thread } from "./types"
 
 export const userData: UserData = {
   id: "1",
   username: "shiggy",
-  avatar: "",
+  avatar: "http://placekitten.com/200/300",
   premium_type: PremiumType.None,
 }
-
-// export const gameState: GameState = {
-//   allPlayers: players; 
-// }
 
 export const players: Player[] = [
   {
@@ -54,11 +50,29 @@ export const players: Player[] = [
   },
 ]
 
+export const gameState: GameState = {
+  allPlayers: players,
+  activePlayers: players,
+  killFeed: [],
+  status: false
+}
+
+export const game: Game = {
+  thread: {
+    name: "string",
+    started_by: "string",
+    id: "string",
+    guildID: "string",
+  },
+  gameState: gameState,
+  id: ""
+}
+
 export const userGuilds: Guild[] = [
   {
     id: "1",
     name: "string",
-    icon: "",
+    icon: "http://placekitten.com/200/300",
     owner: true,
     permissions: 1,
     permissions_new: "string",
@@ -67,7 +81,7 @@ export const userGuilds: Guild[] = [
   {
     id: "2",
     name: "epic lmao",
-    icon: "",
+    icon: "http://placekitten.com/200/300",
     owner: true,
     permissions: 1,
     permissions_new: "string",
@@ -76,7 +90,7 @@ export const userGuilds: Guild[] = [
   {
     id: "3",
     name: "epic",
-    icon: "",
+    icon: "http://placekitten.com/200/300",
     owner: true,
     permissions: 1,
     permissions_new: "string",

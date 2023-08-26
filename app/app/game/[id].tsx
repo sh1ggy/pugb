@@ -3,19 +3,19 @@ import { useAtom } from 'jotai';
 import { Platform, TouchableOpacity } from 'react-native';
 import { Stack, Button, Text, View, XStack, YStack, Image, ScrollView, Spinner } from 'tamagui';
 import { userDataAtom, userGuildsAtom } from '../../lib/store';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router } from 'expo-router';
 // import { players, userData } from '../../lib/mock'
-import { players } from '../../lib/mock'
+import { game, players } from '../../lib/mock'
 import { Avatar } from 'tamagui'
 import { GameState, Player } from '../../lib/types';
 import { GestureEvent, PinchGestureHandler, PinchGestureHandlerEventPayload } from 'react-native-gesture-handler';
-
+import { userData } from '../../lib/mock';
 
 export default function Game() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
-  const [userData, setUserData] = useAtom(userDataAtom);
+  // const [userData, setUserData] = useAtom(userDataAtom);
   const cameraRef = useRef<Camera | null>(null);
   const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const [type, setType] = useState(CameraType.back);
@@ -77,20 +77,22 @@ export default function Game() {
     if (!capturedImage || !killee) return;
     console.log({ capturedImage, killee });
     const data = new FormData();
-    // const fileName = capturedImage.uri.split('/').pop();
-    // const fileType = fileName.split('.').pop();
+    // const response = await fetch(capturedImage.uri);
+    // const picture = await response.blob();
     // https://github.com/expo/image-upload-example/issues/3#issuecomment-387263080
-    const response = await fetch(capturedImage.uri);
-    const picture = await response.blob();
     // https://medium.com/@mwillbanks/react-expo-a-journey-of-uploading-raw-image-data-to-s3-7f308ee6989e
-    const imageData = new File([picture], `photo.jpg`);
 
+    //@ts-ignore
+    data.append('image', {
+      uri: capturedImage.uri,
+      name: "x",
+      type: "jpg"
+    });
 
-    data.append('image', picture);
     data.append('title', "image");
     data.append('killee', killee.id as string);
     try {
-      const URL = `${SERVER_URL}/api/shoot`
+      const URL = `${SERVER_URL}/api/${game.thread.id}/shoot`
       console.log(JSON.stringify(data))
       const res = await fetch(URL, {
         method: 'POST',
@@ -99,10 +101,10 @@ export default function Game() {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log(res);
+      console.log(JSON.stringify(res));
       const jsonres = await res.json();
       let log = JSON.stringify(res, null, 2);
-      console.log({ jsonres });
+      console.log(log);
     }
     catch (e) {
       console.log(JSON.stringify(e, null, 2));
@@ -118,6 +120,10 @@ export default function Game() {
     }
   }
 
+  // useMemo(() => {
+
+  // }, [gameState])
+
   return (
     <>
       {isImageSaving &&
@@ -128,22 +134,22 @@ export default function Game() {
       }
       <YStack bg={'#23252c'} flex={1} jc={'center'} ai={'center'} space={'$3'}>
         <YStack ai={'center'} jc={'center'}>
-          < XStack ai={'flex-start'} >
-            <YStack zi={'$5'} p={'$2'} gap={'$3'}>
-              <Text ta={'left'} fos={'$6'} p={'$2'} col={'#000'} color={'white'} fontFamily={'$body'}>{userData?.username}</Text>
-              {
-                dead &&
-                <>
-                  <Text ta={'center'} fos={'$5'} p={'$2'} col={'#000'} color={'white'}>You are dead</Text>
-                  <Text ta={'center'} fos={'$2'} p={'$2'} col={'#000'} color={'white'}>Take a selfie at McDonalds to revive yourself</Text>
-                </>
-              }
-
-              {userGuilds?.map((guild) => {
-                <Text color={'white'}>guilds {guild}</Text>
-              })}
-            </YStack>
+          < XStack ai={'flex-start'} bg={'#8b89ac'} br={'$3'} p={'$1.5'}>
+            <Avatar circular size="$3">
+              <Avatar.Image src={userData?.avatar} />
+              <Avatar.Fallback bc="red" />
+            </Avatar>
+            <Text ta={'left'} fos={'$6'} p={'$2'} col={'#000'} color={'white'} textAlign='center' fontFamily={'$body'}>{userData?.username}</Text>
           </XStack >
+          <YStack zi={'$5'} p={'$2'} gap={'$3'}>
+            {
+              !dead &&
+              <>
+                <Text ta={'center'} fos={'$4'} p={'$1'} col={'#000'} color={'#e06c75'} fontFamily={'$body'}>You are dead, killed by {"xxx"}</Text>
+                <Text ta={'center'} fos={'$1'} p={'$1'} col={'#000'} color={'white'}>Take a selfie at McDonalds to revive yourself</Text>
+              </>
+            }
+          </YStack>
           {/* <Button
           onPress={() => { startEventSource() }}
           bg={'#5462eb'}>Test SSE
@@ -161,7 +167,7 @@ export default function Game() {
                 onCameraReady={() => setIsCameraLoading(true)}
                 zoom={zoom}
               />
-              <Button bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
+              <Button fontSize={'$2'} bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
               <Button bg={'black'} my={'$3'} onPress={takePicture} disabled={isCameraLoading ? false : true}>Shoot</Button>
             </YStack>
           </PinchGestureHandler>
@@ -173,46 +179,53 @@ export default function Game() {
               }}
               zi={'$5'} w={300} h={400}
             />
-            <Button bg={'black'} onPress={() => {
-              setCapturedImage(undefined);
-              setKillee(null);
-            }}>Retake</Button>
-            {killee &&
-              <Button
-                onPress={sendPicture}
-                bg={'#8b89ac'}>Send Photo
-              </Button>
-            }
+            <XStack>
+              <Button flex={1} bg={'black'} onPress={() => {
+                setCapturedImage(undefined);
+                setKillee(null);
+              }}>Retake</Button>
+              {killee &&
+                <Button
+                  onPress={sendPicture}
+                  bg={'#8b89ac'}>Send Photo
+                </Button>
+              }
+            </XStack>
           </YStack>
         }
 
-        {capturedImage && !dead &&
-          <ScrollView maxHeight={'$6'} horizontal directionalLockEnabled={true} automaticallyAdjustContentInsets={false}>
-            <XStack gap={'$2'} maxHeight={'$6'}>
-              {!killee &&
-                players?.map((player) => {
-                  return (
-                    <Avatar key={player.id}
+        {!dead &&
+          <>
+            {capturedImage &&
+              <ScrollView maxHeight={'$6'} horizontal directionalLockEnabled={true} automaticallyAdjustContentInsets={false}>
+                <XStack gap={'$2'} maxHeight={'$6'}>
+                  {!killee &&
+                    game.gameState.allPlayers.map((player) => {
+                      return (
+                        <Avatar key={player.id}
+                          circular size="$6"
+                          pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
+                          onPress={() => setKillee(player)}>
+                          <Avatar.Image src={player.avatar} />
+                          <Avatar.Fallback bc="#55607b" />
+                        </Avatar>
+                      )
+                    })
+                  }
+                  {killee &&
+                    <Avatar
                       circular size="$6"
                       pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
-                      onPress={() => setKillee(player)}>
-                      <Avatar.Image src={player.avatar} />
-                      <Avatar.Fallback bc="#55607b" />
+                      onPress={() => setKillee(null)}>
+                      <Avatar.Image src={killee?.avatar} />
+                      <Avatar.Fallback bc="red" />
                     </Avatar>
-                  )
-                })
-              }
-              {killee &&
-                <Avatar
-                  circular size="$6"
-                  pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
-                  onPress={() => setKillee(null)}>
-                  <Avatar.Image src={killee?.avatar} />
-                  <Avatar.Fallback bc="red" />
-                </Avatar>
-              }
-            </XStack>
-          </ScrollView>
+                  }
+                </XStack>
+              </ScrollView>
+            }
+          </>
+
         }
 
         <Button
