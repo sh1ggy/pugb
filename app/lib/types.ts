@@ -4,6 +4,8 @@ export interface CodeRequestDTO {
   redirect_uri: String,
 }
 
+
+// user: CurrentUser { id: UserId(1144562548084060241), avatar: Some("061ba7209bcff9e92d69140204e36081"), bot: true, discriminator: 1448, email: None, mfa_enabled: true, name: "pugb", verified: Some(true), public_flags: None, banner: None, accent_colour: None }, version: 10 } })))}
 export interface UserData {
   id: string
   username: string

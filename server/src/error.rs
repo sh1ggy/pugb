@@ -4,18 +4,16 @@ use serde::Serialize;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+// This enum should be able store data related to the error
 #[derive(Clone, Debug, Serialize, strum_macros::AsRefStr)]
 #[serde(tag = "type", content = "data")]
 pub enum Error {
-	LoginFail,
-
 	// -- Auth errors.
 	AuthFailNoAuthTokenCookie,
-	AuthFailTokenWrongFormat,
-	AuthFailCtxNotInRequestExt,
+	AuthFailIncorrectCode,
 
 	// -- Model errors.
-	TicketDeleteFailIdNotFound { id: u64 },
+	// TicketDeleteFailIdNotFound { id: u64 },
 }
 
 // region:    --- Error Boilerplate
@@ -46,30 +44,34 @@ impl IntoResponse for Error {
 }
 
 impl Error {
-	pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {
-		#[allow(unreachable_patterns)]
-		match self {
-			Self::LoginFail => (StatusCode::FORBIDDEN, ClientError::LOGIN_FAIL),
 
-			// -- Auth.
-			Self::AuthFailNoAuthTokenCookie
-			| Self::AuthFailTokenWrongFormat
-			| Self::AuthFailCtxNotInRequestExt => {
-				(StatusCode::FORBIDDEN, ClientError::NO_AUTH)
-			}
+	// map errors to json with status code, error enum, and message
 
-			// -- Model.
-			Self::TicketDeleteFailIdNotFound { .. } => {
-				(StatusCode::BAD_REQUEST, ClientError::INVALID_PARAMS)
-			}
 
-			// -- Fallback.
-			_ => (
-				StatusCode::INTERNAL_SERVER_ERROR,
-				ClientError::SERVICE_ERROR,
-			),
-		}
-	}
+	// pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {
+	// 	#[allow(unreachable_patterns)]
+	// 	match self {
+	// 		Self::LoginFail => (StatusCode::FORBIDDEN, ClientError::LOGIN_FAIL),
+
+	// 		// -- Auth.
+	// 		Self::AuthFailNoAuthTokenCookie
+	// 		| Self::AuthFailTokenWrongFormat
+	// 		| Self::AuthFailCtxNotInRequestExt => {
+	// 			(StatusCode::FORBIDDEN, ClientError::NO_AUTH)
+	// 		}
+
+	// 		// -- Model.
+	// 		Self::TicketDeleteFailIdNotFound { .. } => {
+	// 			(StatusCode::BAD_REQUEST, ClientError::INVALID_PARAMS)
+	// 		}
+
+	// 		// -- Fallback.
+	// 		_ => (
+	// 			StatusCode::INTERNAL_SERVER_ERROR,
+	// 			ClientError::SERVICE_ERROR,
+	// 		),
+	// 	}
+	// }
 }
 
 #[derive(Debug, strum_macros::AsRefStr)]

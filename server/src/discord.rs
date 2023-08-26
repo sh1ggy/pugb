@@ -6,11 +6,13 @@ use serenity::async_trait;
 use tracing::info;
 
 use crate::actor::ActorRef;
-use crate::actor::InternalCommand;
+use crate::actor::InternalRequest;
 
 pub async fn build_client(actor: ActorRef) -> Client {
     let token = std::env::var("DISCORD_TOKEN").unwrap();
-    let mut client = Client::builder(&token, GatewayIntents::default())
+    // let intents = GatewayIntents::default() | GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+    let intents =  GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+    let mut client = Client::builder(&token, intents)
         // .framework(framework)
         .event_handler(Handler)
         .await
@@ -37,7 +39,7 @@ impl EventHandler for Handler {
             .get::<ActorRef>()
             .unwrap()
             .sender
-            .send(InternalCommand::Test { msg });
+            .send(InternalRequest::Test { msg });
     }
 
     async fn ready(&self, _: Context, ready: Ready) {

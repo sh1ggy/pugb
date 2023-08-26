@@ -2,17 +2,18 @@ use std::net::SocketAddr;
 
 use axum::{
     routing::{get, post},
-    Router, Extension,
+    Router, Extension, extract::State,
 };
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use tracing::debug;
 
-use crate::webserver::{auth_handler, game_sse_handler};
+use crate::webserver::{auth_handler, game_sse_handler, refresh_games};
 
 mod actor;
 mod discord;
 mod error;
 mod webserver;
+mod models;
 
 #[tokio::main]
 async fn main() {
@@ -24,11 +25,14 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .init();
+    let req_client = reqwest::Client::new();
 
     let mut actor = actor::Actor::new();
     let app = Router::new()
         .route("/auth", post(auth_handler))
         .route("/game_sse", get(game_sse_handler))
+        .route("/refresh_games", get(refresh_games))
+        .with_state(req_client)
         .layer(Extension(actor.get_ref()))
         .layer(CookieManagerLayer::new());
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
