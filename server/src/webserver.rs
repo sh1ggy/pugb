@@ -115,6 +115,7 @@ pub async fn get_refreshed_user(
 
 // Get query param for game id
 pub async fn game_sse_handler(
+    Path(game_id): Path<u64>,
     Extension(actor): Extension<ActorRef>,
     cookies: Cookies,
 ) -> Sse<impl Stream<Item = core::result::Result<Event, Infallible>>> {
@@ -124,6 +125,9 @@ pub async fn game_sse_handler(
     let guard = SSEGuard {
         actor: actor.clone(),
     };
+
+    // let mut event = Event::default().event(event)
+
     let stream = try_stream! {
         loop {
             match rx.recv().await {
@@ -139,9 +143,17 @@ pub async fn game_sse_handler(
                             .json_data(msg)
                             .unwrap();
                         },
-                        _ => {
-                            println!("Something else: {:?}", i);
-                        }
+                        InternalBroadcast::Kill {killfeed, game_id} => {
+                            if (game_id != game_id) {
+                                continue;
+                            }
+                            println!("Killfeed: {:?}", killfeed);
+                            event = Event::default()
+                            .event("kill")
+                            .json_data(killfeed)
+                            .unwrap();
+                        },
+
                     }
 
                     yield event;

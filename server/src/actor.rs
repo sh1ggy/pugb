@@ -12,7 +12,7 @@ use tokio::sync::{broadcast, mpsc, oneshot};
 
 use crate::error::{Error, Result};
 use crate::models::{
-    DiscordTokenResponse, Game, GuildDTO, Kill, Player, PremiumType, UserData, UserDataDTO,
+    DiscordTokenResponse, Game, GuildDTO, Kill, Player, PremiumType, UserData, UserDataDTO, GameDTO, ThreadDTO, GameStateDTO,
 };
 
 type InternalRequester = tokio::sync::mpsc::UnboundedSender<InternalRequest>;
@@ -59,6 +59,8 @@ pub enum InternalRequest {
 pub enum InternalBroadcast {
     // -- Actor broadcasts
     Test { msg: Message },
+    // This is why you might want multiple broadcasters per game, or an mpsc per connection
+    Kill { killfeed: Vec<Kill>, game_id: u64 },
 }
 
 fn time() -> u128 {
@@ -81,7 +83,7 @@ pub struct Actor {
     // pub guilds: Option<Vec<GuildId>>,
     pub guilds: Vec<GuildId>,
     pub ctx: Option<Arc<Http>>,
-    pub kill_counter : u64,
+    pub kill_counter: u64,
 }
 
 impl Actor {
@@ -198,11 +200,19 @@ impl Actor {
                             game.killfeed.push(kill);
 
                             res.send(Ok(())).unwrap();
+
+                            self.broadcaster
+                                .send(InternalBroadcast::Kill {
+                                    killfeed: game.killfeed.clone(),
+                                    game_id: game.thread.id.0,
+                                })
+                                .unwrap();
                         }
                         None => {
                             res.send(Err(Error::BadRequestInvalidParams {
                                 inner: format!("No Game of id {}", chan_id),
-                            }));
+                            }))
+                            .unwrap();
                             continue;
                         }
                     }
@@ -229,6 +239,35 @@ impl Actor {
         access_token.insert_str(0, "Bearer ");
         let fetched_user = self.get_user_from_api(&access_token, &rt).await?;
         let user_guilds = self.get_user_guilds(&access_token).await?;
+        
+        // let joined_guilds:Vec<&GuildId> = user_guilds.iter().map(|f| {
+        //     let matching_guild = self.guilds
+        //         .iter()
+        //         .find(|g| g.0.to_string() == f.id);
+        //     matching_guild
+                
+
+        // }).filter_map(|f| f.clone())
+        // .collect();
+        // println!("joined_guilds: {:?}", joined_guilds);
+        let avail_games = self.games.values().filter(|game| {
+            game.players.iter().find(|(id, player)| {
+                id.0.to_string() == fetched_user.id
+            }).is_some()
+        }).map(|g| { 
+            GameDTO {
+                thread: ThreadDTO {
+                    id: g.thread.id.0.to_string(),
+                    name: g.thread.name.clone(),
+                    guildID: g.thread.guild_id.0.to_string(),
+                },
+                state: GameStateDTO {
+                    thread: g.thread.id,
+                    players: g.players.values().map(|x| x.clone()).clone().collect(),
+                    killfeed: g.killfeed.clone(),
+                }
+            }
+        }).collect();
 
         // Store the fetched user in the cache
         // Save all details of user on the cache// TODO db
@@ -238,6 +277,7 @@ impl Actor {
         let dto = UserDataDTO {
             user: fetched_user,
             guilds: user_guilds,
+            games: avail_games,
         };
         Ok(dto)
     }

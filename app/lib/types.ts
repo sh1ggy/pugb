@@ -10,7 +10,8 @@ export interface UserData {
   avatar: string
   premium_type: PremiumType
 }
-export interface UserDataDTO extends UserData {
+export interface UserDataDTO  {
+  user: UserData
   guilds: Guild[],
   games: Game[],
 }
@@ -46,7 +47,7 @@ export interface Game {
 
 export interface Thread {
   name: string,
-  started_by: string,
+  // started_by: string,
   id: string,
   guildID: string,
 }
@@ -63,11 +64,11 @@ export interface Player {
   avatar: string,
   active: boolean,
   state: PlayerState,
-  premium_type: PremiumType,
+  // premium_type: PremiumType,
 }
 
 export interface GameState {
-  allPlayers: Player[],
+  players: Player[],
   activePlayers: string[],
   killFeed: Kill[],
   status: boolean,

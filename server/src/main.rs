@@ -34,7 +34,7 @@ async fn main() {
 
     let mut actor = actor::Actor::new();
     let api = Router::new()
-        .route("/game_sse", get(game_sse_handler))
+        .route("/:game_id/game_sse", get(game_sse_handler))
         .route("/get_user", get(get_refreshed_user))
         .route("/:game_id/shoot", post(shoot::shoot_request)) ;
 
