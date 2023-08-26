@@ -56,13 +56,14 @@ pub struct DiscordTokenResponse {
 pub struct Game {
     pub thread: GuildChannel,
     pub players: HashMap<UserId, Player>,
+    pub killfeed: Vec<Kill>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 
 pub struct Kill {
     pub id: String,
-    pub time: u64,
+    pub time: u128,
     pub killerId: String,
     pub killeeId: String,
     pub image: String,

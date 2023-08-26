@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
+use async_session::chrono;
 use serde_json::value::Index;
 use serde_json::{from_value, Value};
 use serenity::http::Http;
@@ -10,7 +12,7 @@ use tokio::sync::{broadcast, mpsc, oneshot};
 
 use crate::error::{Error, Result};
 use crate::models::{
-    DiscordTokenResponse, Game, GuildDTO, Player, PremiumType, UserData, UserDataDTO, Kill,
+    DiscordTokenResponse, Game, GuildDTO, Kill, Player, PremiumType, UserData, UserDataDTO,
 };
 
 type InternalRequester = tokio::sync::mpsc::UnboundedSender<InternalRequest>;
@@ -46,8 +48,8 @@ pub enum InternalRequest {
     },
     Shoot {
         game_id: u64,
-        killee: u64,
-        killer: u64,
+        killee: String,
+        killer: String,
         image: Vec<u8>,
         res: oneshot::Sender<Result<()>>,
     },
@@ -59,6 +61,12 @@ pub enum InternalBroadcast {
     Test { msg: Message },
 }
 
+fn time() -> u128 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+}
 pub struct Actor {
     // pub games: Vec<Game>,
     // Db connection
@@ -73,7 +81,7 @@ pub struct Actor {
     // pub guilds: Option<Vec<GuildId>>,
     pub guilds: Vec<GuildId>,
     pub ctx: Option<Arc<Http>>,
-    pub killfeed: Vec<Kill>
+    pub kill_counter : u64,
 }
 
 impl Actor {
@@ -93,7 +101,7 @@ impl Actor {
             games: HashMap::new(),
             guilds: Vec::new(),
             ctx: None,
-            killfeed: Vec::new(),
+            kill_counter: 0,
         }
     }
 
@@ -124,6 +132,7 @@ impl Actor {
                     let mut game = Game {
                         players: HashMap::new(),
                         thread,
+                        killfeed: Vec::new(),
                     };
                     let user = msg.author;
                     let user_id = user.id.clone();
@@ -155,28 +164,48 @@ impl Actor {
                     };
 
                     let chan_id = ChannelId(game_id);
-                    
 
-                    let res: Result<&Game> = self.games
-                        .get(&chan_id)
-                        .ok_or(Error::BadRequestInvalidParams {
-                            inner: format!("No Game of id {}", chan_id),
-                        });
-                
-                        let res_img = res
-                        .unwrap()
-                        .thread
-                        .send_message(ctx, move |m| {
-                            let attatchment = AttachmentType::Bytes {
-                                data: image.into(),
-                                filename: "Hey man.jpg".into(),
+                    match self.games.get_mut(&chan_id) {
+                        Some(game) => {
+                            let res_img = game
+                                .thread
+                                .send_message(ctx, move |m| {
+                                    let attatchment = AttachmentType::Bytes {
+                                        data: image.into(),
+                                        filename: "Hey man.jpg".into(),
+                                    };
+                                    m.add_file(attatchment)
+                                })
+                                .await
+                                .unwrap();
+                            // Create Kill here
+                            let mut cdn_url = "https://cdn.discordapp.com/attachments/".to_string();
+                            // let proxy =  res_img.attachments[0].proxy_url.clone();
+                            // let url = res_img.attachments[0].url.clone();
+                            println!("res_img: {:?}", res_img.attachments[0]);
+
+                            let current_time: u128 = time();
+
+                            self.kill_counter += 1;
+                            let kill = Kill {
+                                image: res_img.attachments[0].url.clone(),
+                                id: self.kill_counter.to_string(),
+                                time: current_time,
+                                killerId: killer,
+                                killeeId: killee,
+                                state: crate::models::KillState::Normal,
                             };
-                            m.add_file(attatchment)
-                        })
-                        .await
-                        .unwrap();
-                    // res_img.attachments[0].
-                    res.send(Ok(())).unwrap();
+                            game.killfeed.push(kill);
+
+                            res.send(Ok(())).unwrap();
+                        }
+                        None => {
+                            res.send(Err(Error::BadRequestInvalidParams {
+                                inner: format!("No Game of id {}", chan_id),
+                            }));
+                            continue;
+                        }
+                    }
                 }
             }
         }
