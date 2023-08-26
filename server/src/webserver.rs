@@ -24,6 +24,7 @@ use crate::{
 use crate::error::{Error, Result};
 
 pub mod auth;
+pub mod shoot;
 
 static AUTH_COOKIE: &str = "auth_token";
 

@@ -1,3 +1,5 @@
+use std::io;
+
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
@@ -11,7 +13,12 @@ pub enum Error {
 	// -- Auth errors.
 	AuthFailNoAuthTokenCookie,
 	AuthFailIncorrectCode,
-	AuthFailTokenExpired
+	AuthFailTokenExpired,
+	BadRequestInvalidPath,
+
+	// BadRequestInvalidStream
+	BadRequestInvalidStream {inner: String},
+
 
 	// -- Model errors.
 	// TicketDeleteFailIdNotFound { id: u64 },
