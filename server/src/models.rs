@@ -59,7 +59,7 @@ pub struct Game {
     pub killfeed: Vec<Kill>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 
 pub struct Kill {
     pub id: String,
@@ -69,7 +69,7 @@ pub struct Kill {
     pub image: String,
     pub state: KillState, 
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 
 pub enum KillState {
     Contested,

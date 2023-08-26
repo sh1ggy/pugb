@@ -59,6 +59,8 @@ pub enum InternalRequest {
 pub enum InternalBroadcast {
     // -- Actor broadcasts
     Test { msg: Message },
+    // This is why you might want multiple broadcasters per game, or an mpsc per connection
+    Kill { killfeed: Vec<Kill>, game_id: u64 },
 }
 
 fn time() -> u128 {
@@ -81,7 +83,7 @@ pub struct Actor {
     // pub guilds: Option<Vec<GuildId>>,
     pub guilds: Vec<GuildId>,
     pub ctx: Option<Arc<Http>>,
-    pub kill_counter : u64,
+    pub kill_counter: u64,
 }
 
 impl Actor {
@@ -198,11 +200,19 @@ impl Actor {
                             game.killfeed.push(kill);
 
                             res.send(Ok(())).unwrap();
+
+                            self.broadcaster
+                                .send(InternalBroadcast::Kill {
+                                    killfeed: game.killfeed.clone(),
+                                    game_id: game.thread.id.0,
+                                })
+                                .unwrap();
                         }
                         None => {
                             res.send(Err(Error::BadRequestInvalidParams {
                                 inner: format!("No Game of id {}", chan_id),
-                            }));
+                            }))
+                            .unwrap();
                             continue;
                         }
                     }
