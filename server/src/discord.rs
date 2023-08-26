@@ -82,7 +82,7 @@ impl EventHandler for Handler {
         println!("Reacty: {:?}", reaction);
     }
 
-    async fn ready(&self, _: Context, ready: Ready) {
+    async fn ready(&self, ctx: Context, ready: Ready) {
         info!("{} is connected!", ready.user.name);
         let guilds: Vec<_> = ready
             .guilds
@@ -90,5 +90,13 @@ impl EventHandler for Handler {
             .filter(|g| !g.unavailable)
             .map(|g| g.id)
             .collect();
+        let internal_msg = InternalRequest::InitServer { guilds, ctx: ctx.http.clone() };
+        ctx.data
+            .write()
+            .await
+            .get::<ActorRef>()
+            .unwrap()
+            .sender
+            .send(internal_msg);
     }
 }

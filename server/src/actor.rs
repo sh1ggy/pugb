@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use serde_json::value::Index;
 use serde_json::{from_value, Value};
@@ -40,7 +41,7 @@ pub enum InternalRequest {
     },
     InitServer {
         guilds: Vec<GuildId>,
-        ctx: Http
+        ctx: Arc<Http>
     },
     Shoot { image: Vec<u8>},
 }
@@ -64,7 +65,7 @@ pub struct Actor {
     pub games: Vec<Game>,
     // pub guilds: Option<Vec<GuildId>>,
     pub guilds: Vec<GuildId>,
-    pub ctx: Option<Http>
+    pub ctx: Option<Arc<Http>>
 }
 
 impl Actor {
@@ -125,10 +126,13 @@ impl Actor {
                     game.players.insert(user_id, player);
                     self.games.push(game);
                 },
-                InternalRequest::InitServer { guilds ,ctx } => {self.guilds = guilds;
+                InternalRequest::InitServer { guilds ,ctx } => {
+                    println!("Setting up server");
+                    self.guilds = guilds;
                   self.ctx = Some(ctx);  
                 },
                 InternalRequest::Shoot {image, } => {
+                    println!("in handle {:?}, {:?}, {:?}", image, self.games, self.guilds );
                     let ctx = if let Some(ctx) = self.ctx.as_ref() {
                         ctx
                     } else {
@@ -136,9 +140,9 @@ impl Actor {
                     };
                     
                     self.games[0].thread.send_message(ctx, move|m| {
-                        let attatchment = AttachmentType::Bytes { data: image.into(), filename: "Hey man".into() };
+                        let attatchment = AttachmentType::Bytes { data: image.into(), filename: "Hey man.jpg".into() };
                         m.add_file(attatchment)
-                    });
+                    }).await.unwrap();
                     // let f = [(&tokio::fs::File::open("image.png").await?, "image.png")];
                     // self.games[0].thread.send_files(http, files, f)
                 }

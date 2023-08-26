@@ -51,6 +51,7 @@ pub struct DiscordTokenResponse {
     pub scope: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Game {
     pub thread: GuildChannel,
     pub players: HashMap<UserId, Player>,

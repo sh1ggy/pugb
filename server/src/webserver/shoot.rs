@@ -30,11 +30,13 @@ pub async fn shoot_request(
         } else {
             continue;
         };
+        println!("Field_name: {field_name}");
         if (field_name == "image") {
             // stream_to_file(&"image", field).await?;
             let bytes_struct: Bytes = field.bytes().await.unwrap();
+            println!("HEY MAN, GOT IMAGE {:?}", bytes_struct);
             let bytes: Vec<u8> = bytes_struct.into();
-            actor.sender.send(InternalRequest::Shoot { image: bytes }).unwrap()
+            actor.sender.send(InternalRequest::Shoot { image: bytes }).unwrap();
         } else {
             continue;
         }
