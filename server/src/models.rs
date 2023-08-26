@@ -37,9 +37,9 @@ pub struct UserDataDTO {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GuildDTO {
-  id: String,
-  name: String,
-  icon: String
+    id: String,
+    name: String,
+    icon: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -52,26 +52,26 @@ pub struct DiscordTokenResponse {
 }
 
 pub struct Game {
-    thread: GuildChannel,
-    players: HashMap<UserId, Player>,
+    pub thread: GuildChannel,
+    pub players: HashMap<UserId, Player>,
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Player {
-  pub user: User, 
-  pub state: PlayerState,
-  pub active: PlayerActive,
+    pub user: User,
+    pub state: PlayerState,
+    pub active: PlayerActive,
 }
 
 // TODO: use bitflags instead here
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum PlayerState {
-  Alive, Dead, 
+    Alive,
+    Dead,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum PlayerActive {
-  NotActive,
-  Active
+    NotActive,
+    Active,
 }
