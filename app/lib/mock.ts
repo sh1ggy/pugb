@@ -1,12 +1,55 @@
-import { Guild, PremiumType, UserData } from "./types"
+import { Guild, PremiumType, UserData, Player, PlayerState } from "./types"
 
-export const user: UserData = {
+export const userData: UserData = {
   id: "1",
   username: "shiggy",
   avatar: "",
   premium_type: PremiumType.None,
   rt: ""
 }
+
+export const players: Player[] = [
+  {
+    id: "1",
+    username: "cum",
+    avatar: "http://placekitten.com/200/300",
+    active: true,
+    state: PlayerState.Alive,
+    premium_type: PremiumType.None,
+  },
+  {
+    id: "2",
+    username: "cum",
+    avatar: "http://placekitten.com/200/300",
+    active: true,
+    state: PlayerState.Alive,
+    premium_type: PremiumType.None,
+  },
+  {
+    id: "3",
+    username: "cum",
+    avatar: "http://placekitten.com/200/300",
+    active: true,
+    state: PlayerState.Alive,
+    premium_type: PremiumType.None,
+  },
+  {
+    id: "4",
+    username: "cum",
+    avatar: "http://placekitten.com/200/300",
+    active: true,
+    state: PlayerState.Alive,
+    premium_type: PremiumType.None,
+  },
+  {
+    id: "5",
+    username: "cum",
+    avatar: "http://placekitten.com/200/300",
+    active: true,
+    state: PlayerState.Alive,
+    premium_type: PremiumType.None,
+  },
+]
 
 export const userGuilds: Guild[] = [
   {

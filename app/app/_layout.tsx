@@ -47,7 +47,7 @@ function RootLayoutNav() {
     <TamaguiProvider config={config}>
       <Provider>
         <Stack flex={1} ai={'center'} jc={'center'} bg={'#23252c'}>
-          <Logo width={50} style={{position: 'relative', top:0}} />
+          <Logo width={50} style={{position: 'absolute', top:0}} />
           <Slot />
         </Stack>
       </Provider>
