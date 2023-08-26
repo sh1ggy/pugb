@@ -3,6 +3,7 @@ use serenity::builder::EditThread;
 use serenity::model::channel::Message;
 use serenity::model::prelude::GuildChannel;
 use serenity::model::prelude::Reaction;
+use serenity::model::prelude::ReactionType;
 use serenity::model::prelude::Ready;
 use serenity::prelude::*;
 use serenity::Client;
@@ -14,7 +15,7 @@ use crate::actor::InternalRequest;
 pub async fn build_client(actor: ActorRef) -> Client {
     let token = std::env::var("DISCORD_TOKEN").unwrap();
     // let intents = GatewayIntents::default() | GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
-    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGE_REACTIONS | GatewayIntents::DIRECT_MESSAGE_REACTIONS;
     let mut client = Client::builder(&token, intents)
         // .framework(framework)
         .event_handler(Handler)
@@ -30,6 +31,8 @@ pub async fn build_client(actor: ActorRef) -> Client {
 impl TypeMapKey for ActorRef {
     type Value = ActorRef;
 }
+
+
 
 struct Handler;
 
@@ -78,8 +81,11 @@ impl EventHandler for Handler {
         //     .send(InternalRequest::Test { msg });
     }
 
+    
     async fn reaction_add(&self, _ctx: Context, reaction: Reaction) {
         println!("Reacty: {:?}", reaction);
+        let join = ReactionType:: Unicode("🎟\u{fe0f}".to_string());
+        
     }
 
     async fn ready(&self, ctx: Context, ready: Ready) {
