@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::thread::Thread;
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
@@ -28,19 +29,39 @@ pub enum PremiumType {
     NitroBasic,
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserDataDTO {
     pub user: UserData,
     pub guilds: Vec<GuildDTO>,
-    // games: Vec<Game>,
+    pub games: Vec<GameDTO>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GameDTO {
+
+    pub thread: ThreadDTO,
+    pub state: GameStateDTO,
+
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ThreadDTO {
+    pub id: String,
+    pub name: String,
+    pub guildID: String,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GameStateDTO {
+    pub thread: ChannelId,
+    pub players: Vec< Player>,
+    pub killfeed: Vec<Kill>,
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GuildDTO {
-    id: String,
-    name: String,
-    icon: Option<String>,
+    pub id: String,
+    pub name: String,
+    pub icon: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -67,14 +88,14 @@ pub struct Kill {
     pub killerId: String,
     pub killeeId: String,
     pub image: String,
-    pub state: KillState, 
+    pub state: KillState,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 
 pub enum KillState {
     Contested,
     Normal,
-  }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Player {
