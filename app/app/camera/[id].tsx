@@ -4,7 +4,7 @@ import { TouchableOpacity } from 'react-native';
 import { Stack, Button, Text, View, XStack, YStack, Image } from 'tamagui';
 import { userDataAtom, userGuildsAtom } from '../../lib/store';
 import { useState } from 'react';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 
 export default function Game() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
@@ -78,7 +78,10 @@ export default function Game() {
         </View>
       </Stack>
       
-      <Link href="/">Go back</Link>
+      <Button
+        onPress={() => router.push('/select')}
+        bg={'#5462eb'}>Back
+      </Button>
     </Stack>
   )
 }

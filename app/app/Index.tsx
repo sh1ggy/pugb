@@ -79,12 +79,8 @@ export default function Pugb() {
         bg={'#5462eb'}>Login
       </Button>
       <Button
-        onPress={() => router.push('/selection')}
+        onPress={() => router.push('/select')}
         bg={'#5462eb'}>Game Select
-      </Button>
-      <Button
-        onPress={() => router.push('/camera')}
-        bg={'#5462eb'}>Camera
       </Button>
     </Stack >
   )
