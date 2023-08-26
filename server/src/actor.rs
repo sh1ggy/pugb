@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use serde_json::value::Index;
+use serde_json::{from_value, Value};
 use serenity::model::prelude::Message;
 use serenity::model::user::User;
 use tokio::sync::{broadcast, mpsc, oneshot};
 
 use crate::error::{Error, Result};
-use crate::models::UserData;
+use crate::models::{DiscordTokenResponse, PremiumType, UserData};
 
 type InternalRequester = tokio::sync::mpsc::UnboundedSender<InternalRequest>;
 type InternalBroadcaster = tokio::sync::broadcast::Sender<InternalBroadcast>;
@@ -29,7 +30,7 @@ pub enum InternalRequest {
     // -- Actor Requests
     GetUser {
         rt: String,
-        res: oneshot::Sender<UserData>,
+        res: oneshot::Sender<Result<UserData>>,
     },
 }
 
@@ -51,7 +52,7 @@ pub struct Actor {
     pub broadcaster: InternalBroadcaster,
     pub receiver: tokio::sync::mpsc::UnboundedReceiver<InternalRequest>,
     pub self_ref: ActorRef,
-    pub http_req : reqwest::Client,
+    pub http_req: reqwest::Client,
 
     pub users: HashMap<String, UserData>,
 }
@@ -94,9 +95,9 @@ impl Actor {
                 InternalRequest::GetUser { rt, res } => {
                     println!("Actor got a get user command: {:?}", rt);
                     // TODO handle
-                    let user = self.get_user(rt).await.unwrap();
+                    let user = self.get_user(rt).await;
                     res.send(user).unwrap();
-                },
+                }
             }
         }
     }
@@ -107,16 +108,86 @@ impl Actor {
             return Ok(user.clone());
         } else {
             // Fetch the user from the API
-            let fetched_user = self.get_user_from_api(&rt).await;
+            let fetched_user = self.get_user_from_api(&rt).await?;
             // Store the fetched user in the cache
+            // Save all details of user on the cache// TODO db
             self.users.insert(rt, fetched_user.clone());
             Ok(fetched_user)
         }
     }
 
-    async fn get_user_from_api(&self, rt: &str) -> UserData {
+    async fn get_user_from_api(&self, rt: &str) -> Result<UserData> {
         let url = format!("https://discord.com/api/v8/users/@me");
+
+        let client_id = std::env::var("CLIENT_ID").unwrap();
+        let client_secret = std::env::var("CLIENT_SECRET").unwrap();
+        // Make code request to get rt
+
+        // It requires a URL encoded form, not multipart
+        // let params = [("client_id", client_id), ("client_secret", client_secret)];
+
         let mut headers = reqwest::header::HeaderMap::new();
+
+        // headers.insert(
+        //     reqwest::header::CONTENT_TYPE,
+        //     reqwest::header::HeaderValue::from_static("application/x-www-form-urlencoded"),
+        // );
+        let mut acces_token = self.get_access_token(rt).await?;
+        acces_token.insert_str(0, "Bearer ");
+        headers.insert(
+            reqwest::header::AUTHORIZATION,
+            reqwest::header::HeaderValue::from_str(&acces_token).unwrap(),
+        );
+        headers.insert(
+            reqwest::header::ACCEPT,
+            reqwest::header::HeaderValue::from_static("application/json"),
+        );
+
+        // let response = response.json::<Value>().await.unwrap();
+
+        let response = self
+            .http_req
+            .get(url)
+            .headers(headers)
+            .send()
+            .await
+            .unwrap();
+
+        // println!("Response: {:?}", &response.text().await.unwrap());
+        let response = response.json::<Value>().await.unwrap();
+
+        let deserialized_enum: PremiumType = response["premium_type"].as_i64().unwrap().try_into().unwrap();
+        let user = UserData {
+            // to string and clone is the same thing
+            id: from_value(response["id"].clone()).unwrap(),
+            username: response["username"].as_str().unwrap().to_string(),
+            avatar: response["avatar"].as_str().unwrap().to_string(),
+            email: response["email"].as_str().unwrap().to_string(),
+            premium_type: deserialized_enum,
+            rt: rt.to_string(),
+        };
+        Ok(user)
+    }
+
+    async fn get_access_token(&self, rt: &str) -> Result<String> {
+        let url = "https://discord.com/api/oauth2/token";
+        let client_id = std::env::var("CLIENT_ID").unwrap();
+        let client_secret = std::env::var("CLIENT_SECRET").unwrap();
+        // Make code request to get rt
+
+        // It requires a URL encoded form, not multipart
+        let params = [
+            ("client_id", client_id),
+            ("client_secret", client_secret),
+            ("grant_type", "refresh_token".to_string()),
+            ("refresh_token", rt.to_string()),
+        ];
+        let mut headers = reqwest::header::HeaderMap::new();
+
+        headers.insert(
+            reqwest::header::CONTENT_TYPE,
+            reqwest::header::HeaderValue::from_static("application/x-www-form-urlencoded"),
+        );
         headers.insert(
             reqwest::header::AUTHORIZATION,
             reqwest::header::HeaderValue::from_str(&rt).unwrap(),
@@ -125,44 +196,28 @@ impl Actor {
             reqwest::header::ACCEPT,
             reqwest::header::HeaderValue::from_static("application/json"),
         );
-        // let response = self
-        //     .http_req
-        //     .get(url)
-        //     .headers(headers)
-        //     .send()
-        //     .await
-        //     .unwrap()
-        //     .json::<serde_json::Value>()
-        //     .await
-        //     .unwrap();
 
         let response = self
             .http_req
-            .get(url)
+            .post(url)
+            .form(&params)
             .headers(headers)
             .send()
             .await
             .unwrap()
-            .json::<UserData>()
+            .json::<DiscordTokenResponse>()
             .await
-            .unwrap();
-        println!("Response: {:?}", response);
-        // let user = UserData {
-        //     id: response["id"].as_str().unwrap().to_string(),
-        //     username: response["username"].as_str().unwrap().to_string(),
-        //     avatar: response["avatar"].as_str().unwrap().to_string(),
-        //     email: response["email"].as_str().unwrap().to_string(),
-        //     premium_type: response["premium_type"].as_i64().unwrap(),
-        //     rt: rt.to_string(),
-        // };
-        response
+            .map_err(|e| Error::AuthFailTokenExpired)?;
+
+        // println!("Response1: {:?}", response.text().await.unwrap());
+        // let response = response.json::<Value>().await.unwrap();
+        // println!("Response: {:?}", response);
+        // Err(Error::AuthFailIncorrectCode)
+
+        Ok(response.access_token)
     }
 
-
-    
     fn broadcast_game_update(&self) {
         // TODO
     }
 }
-
-

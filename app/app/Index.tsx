@@ -58,7 +58,7 @@ export default function Pugb() {
           let log = JSON.stringify(res, null, 2);
           let secondLog = JSON.stringify(request, null, 2);
           
-          // console.log({ jsonres, log, secondLog});
+          console.log({ jsonres,  });
           
           // setUserGuilds(jsonres.guilds);
           // const { guilds, ...userDataTemp } = jsonres;

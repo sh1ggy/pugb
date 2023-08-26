@@ -2,12 +2,12 @@ use std::convert::Infallible;
 
 use async_stream::try_stream;
 use axum::{
-    extract::{self, State},
+    extract::{self, State, Path, BodyStream},
     response::{
         sse::{Event, KeepAlive},
         Sse,
     },
-    Extension, Json,
+    Extension, Json, body::Bytes, BoxError,
 };
 use futures::Stream;
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,10 @@ use serenity::client;
 use tokio::sync::oneshot;
 use tower_cookies::{Cookie, Cookies};
 
-use crate::{actor::{ActorRef, InternalBroadcast, InternalRequest}, models::UserData};
+use crate::{
+    actor::{ActorRef, InternalBroadcast, InternalRequest},
+    models::{UserData, DiscordTokenResponse},
+};
 
 use crate::error::{Error, Result};
 
@@ -30,13 +33,8 @@ pub async fn auth_handler(
     Extension(actor): Extension<ActorRef>,
     Json(req): Json<CodeRequestDTO>,
 ) -> Result<Json<UserData>> {
-
+    // ) -> Result<()> {
     // TODO do a join on the servres of the user and games that exist and send back to client
-    let body = Json(json!({
-        "result": {
-            "success": true
-        }
-    }));
     let scopes = vec!["identify", "email", "guilds"];
     let client_id = std::env::var("CLIENT_ID").unwrap();
     let client_secret = std::env::var("CLIENT_SECRET").unwrap();
@@ -52,7 +50,7 @@ pub async fn auth_handler(
         ("redirect_uri", req.redirect_uri.clone()),
         ("scope", scopes.join(" ")),
         ("code", req.code.clone()),
-        ("code_verifier", req.code_verifier.clone())
+        ("code_verifier", req.code_verifier.clone()),
     ];
 
     let url = "https://discord.com/api/oauth2/token";
@@ -72,35 +70,27 @@ pub async fn auth_handler(
         .headers(headers)
         .send()
         .await
-        .unwrap()
-        .json::<TokenResponse>()
-        .await
         .unwrap();
-    println!("Response: {:?}", response);
-    let rt = response.refresh_token.unwrap();
+    if response.status().is_success() {
+        let token_response = response.json::<DiscordTokenResponse>().await.unwrap();
 
+        let rt = token_response.refresh_token.unwrap();
 
-    cookies.add(Cookie::new(AUTH_COOKIE, rt.clone()));
-    let (send, recv) = oneshot::channel();
+        cookies.add(Cookie::new(AUTH_COOKIE, rt.clone()));
+        let (send, recv) = oneshot::channel();
 
-    let user_req = InternalRequest::GetUser { rt, res: send };
-    actor.sender.send(user_req);
+        let user_req = InternalRequest::GetUser { rt, res: send };
+        actor.sender.send(user_req);
 
-    let user_data = recv.await.unwrap();
+        let user_data = recv.await.unwrap()?;
 
-    Ok(Json(user_data))
+        Ok(Json(user_data))
+    } else {
+        tracing::error!("Response: {:?}", response);
+        return Err(Error::AuthFailIncorrectCode);
+    }
 }
-#[derive(Debug, Serialize, Deserialize)]
-struct TokenResponse {
-    access_token: String,
-    token_type: String,
-    expires_in: i32,
-    refresh_token: Option<String>,
-    scope: String,
-}
-
-
-pub async fn refresh_games(cookies: Cookies) -> Result<Json<Value>> {
+pub async fn get_refreshed_user(cookies: Cookies) -> Result<Json<Value>> {
     let body = Json(json!({
         "result": {
             "success": true
@@ -108,6 +98,7 @@ pub async fn refresh_games(cookies: Cookies) -> Result<Json<Value>> {
     }));
     Err(Error::AuthFailNoAuthTokenCookie)
 }
+
 
 // Get query param for game id
 pub async fn game_sse_handler(
@@ -171,4 +162,3 @@ pub struct CodeRequestDTO {
 }
 
 struct CodeResponseDTO {}
-

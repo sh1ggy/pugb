@@ -10,7 +10,9 @@ use axum::{
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use tracing::debug;
 
-use crate::webserver::{auth::main_response_mapper, auth_handler, game_sse_handler, refresh_games};
+use crate::webserver::{
+    auth::main_response_mapper, auth_handler, game_sse_handler, get_refreshed_user,
+};
 
 mod actor;
 mod discord;
@@ -33,8 +35,9 @@ async fn main() {
     let mut actor = actor::Actor::new();
     let api = Router::new()
         .route("/game_sse", get(game_sse_handler))
-        .route("/refresh_games", get(refresh_games));
-        // Add context middleware
+        .route("/get_user", get(get_refreshed_user));
+        // .route("/file/:file_name", post(save_request_body));
+    // Add context middleware
     let app = Router::new()
         .route("/auth", post(auth_handler))
         .nest("/api", api)

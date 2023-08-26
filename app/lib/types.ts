@@ -4,17 +4,15 @@ export interface CodeRequestDTO {
   redirect_uri: String,
 }
 
-
-// user: CurrentUser { id: UserId(1144562548084060241), avatar: Some("061ba7209bcff9e92d69140204e36081"), bot: true, discriminator: 1448, email: None, mfa_enabled: true, name: "pugb", verified: Some(true), public_flags: None, banner: None, accent_colour: None }, version: 10 } })))}
 export interface UserData {
   id: string
   username: string
   avatar: string
   premium_type: PremiumType
-  rt: string
 }
 export interface UserDataDTO extends UserData {
   guilds: Guild[],
+  games: Game[],
 }
 
 export interface Guild {
@@ -33,6 +31,7 @@ export enum PremiumType {
   Nitro,
   NitroBasic,
 }
+
 
 export interface Game {
   id: string,
