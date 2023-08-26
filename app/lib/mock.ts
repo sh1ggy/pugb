@@ -1,4 +1,4 @@
-import { Guild, PremiumType, UserData, Player, PlayerState } from "./types"
+import { Guild, PremiumType, UserData, Player, PlayerState, GameState } from "./types"
 
 export const userData: UserData = {
   id: "1",
@@ -7,6 +7,10 @@ export const userData: UserData = {
   premium_type: PremiumType.None,
   rt: ""
 }
+
+// export const gameState: GameState = {
+//   allPlayers: players; 
+// }
 
 export const players: Player[] = [
   {

@@ -1,7 +1,7 @@
 import { Camera, CameraCapturedPicture, CameraPictureOptions, CameraType } from 'expo-camera';
 import { useAtom } from 'jotai';
-import { TouchableOpacity } from 'react-native';
-import { Stack, Button, Text, View, XStack, YStack, Image, ScrollView } from 'tamagui';
+import { Platform, TouchableOpacity } from 'react-native';
+import { Stack, Button, Text, View, XStack, YStack, Image, ScrollView, Spinner } from 'tamagui';
 import { userDataAtom, userGuildsAtom } from '../../lib/store';
 import { useRef, useState } from 'react';
 import { Link, router } from 'expo-router';
@@ -14,12 +14,13 @@ export default function Game() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
   const [userData, setUserData] = useAtom(userDataAtom);
-  const [camera, setCamera] = useState<Camera | null>(null);
+  const cameraRef = useRef<Camera | null>(null);
   const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const [type, setType] = useState(CameraType.back);
   const [permission, requestPermission] = Camera.useCameraPermissions();
   const [capturedImage, setCapturedImage] = useState<CameraCapturedPicture>();
   const [killee, setKillee] = useState<Player | null>(null);
+  const [isImageSaving, setIsImageSaving] = useState<boolean>(false)
   const dead = false;
 
   function toggleCameraType() {
@@ -50,8 +51,10 @@ export default function Game() {
   }
 
   const takePicture = async () => {
-    if (!camera) return
-    const photo = await camera.takePictureAsync({ base64: true });
+    if (!cameraRef.current) return
+    setIsImageSaving(true);
+    const photo = await cameraRef.current.takePictureAsync({ base64: false, quality: 0.1, skipProcessing: true, });
+    setIsImageSaving(false);
     setCapturedImage(photo);
   }
 
@@ -81,9 +84,8 @@ export default function Game() {
 
   return (
     <YStack bg={'#23252c'} flex={1} jc={'center'} ai={'center'} space={'$3'}>
-
       <YStack ai={'center'} jc={'center'}>
-        < XStack ai={'flex-start'} borderWidth={'$.5'} >
+        < XStack ai={'flex-start'} >
           <YStack zi={'$5'} p={'$2'} gap={'$3'}>
             <Text ta={'left'} fos={'$6'} p={'$2'} col={'#000'} color={'white'}>{userData?.username}</Text>
             {
@@ -105,39 +107,41 @@ export default function Game() {
         </Button> */}
       </YStack >
 
-      <XStack>
-        <YStack ai={'center'} br={'$3'} onPress={toggleCameraType}>
-          <Camera
-            ref={(r) => {
-              setCamera(r);
-            }}
-            type={type}
-            style={{ width: 180, height: 180, borderRadius: 30 }}
-          >
-          </Camera>
-        </YStack>
-        {capturedImage ?
-          <Image
-            source={{
-              uri: capturedImage?.uri
-            }}
-            zi={'$5'} flex={1} borderRadius={'$2'}
-          />
-          :
-          <Stack flex={1} bg={'#8b89ac'} />
-        }
-      </XStack>
 
-      <XStack gap={'$2'}>
-        <Button
-          onPress={takePicture}
-          bg={'#8b89ac'}>Take Photo
-        </Button>
-        <Button
-          onPress={sendPicture}
-          bg={'#8b89ac'}>Send Photo
-        </Button>
-      </XStack>
+      <Stack>
+        {!capturedImage ?
+          <YStack>
+            <Camera
+              ref={cameraRef}
+              type={type}
+              style={{ width: 200, height: 300 }}
+              autoFocus={!(Platform.OS == 'android')}
+            >
+              {isImageSaving &&
+              <Stack flex={1} ai={'center'} jc={'center'}>
+                <Spinner bg={'black'} br={'$3'} size="large" color="#5462eb"></Spinner>
+              </Stack>
+              }
+            </Camera>
+            <Button bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
+            <Button bg={'black'} onPress={takePicture}>Shoot</Button>
+          </YStack>
+          :
+          <YStack>
+            <Image
+              source={{
+                uri: capturedImage?.uri
+              }}
+              zi={'$5'} w={200} h={300}
+            />
+            <Button bg={'black'} onPress={() => { setCapturedImage(undefined) }}>Retake</Button>
+          </YStack>
+        }
+      </Stack>
+      <Button
+        onPress={sendPicture}
+        bg={'#8b89ac'}>Send Photo
+      </Button>
 
       {capturedImage && !dead &&
         <ScrollView maxHeight={'$6'} horizontal directionalLockEnabled={true} automaticallyAdjustContentInsets={false}>
@@ -147,15 +151,13 @@ export default function Game() {
                 return (
                   <Avatar key={player.id}
                     circular size="$6"
-                    borderColor={killee ? '#5462eb' : ""}
-                    borderWidth={killee ? '$1' : ""}
                     pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
                     onPress={(e) => {
                       setKillee(player);
                       console.log(killee);
                     }}>
                     <Avatar.Image src={player.avatar} />
-                    <Avatar.Fallback bc="red" />
+                    <Avatar.Fallback bc="#55607b" />
                   </Avatar>
                 )
               })
@@ -163,8 +165,7 @@ export default function Game() {
             {killee &&
               <Avatar
                 circular size="$6"
-                borderColor='#5462eb'
-                pressStyle={{ borderColor: '#8b89ac', borderWidth: '$1' }}
+                pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
                 onPress={(e) => {
                   setKillee(null);
                   console.log(killee);
