@@ -34,7 +34,6 @@ export enum PremiumType {
 
 
 export interface Game {
-  id: string,
   thread: Thread,
   gameState: GameState,
 }
@@ -76,10 +75,10 @@ export enum KillState {
 }
 
 export interface Kill {
-  id: string,
+  id: number,
   killerId: string,
   killeeId: string,
-  time: string,
+  time: number,
   image: string, // CDN link
   state: KillState,
 }

@@ -11,7 +11,7 @@ use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use tracing::debug;
 
 use crate::webserver::{
-    auth::main_response_mapper, auth_handler, game_sse_handler, get_refreshed_user, shoot::{save_request_body, self},
+    auth::main_response_mapper, auth_handler, game_sse_handler, get_refreshed_user, shoot::{ self},
 };
 
 mod actor;
@@ -35,9 +35,8 @@ async fn main() {
     let mut actor = actor::Actor::new();
     let api = Router::new()
         .route("/game_sse", get(game_sse_handler))
-        .route("/get_user", get(get_refreshed_user))
-        .route("/file/:file_name", post(save_request_body))
-        .route("/shoot", post(shoot::shoot_request));
+        .route("/:id/get_user", get(get_refreshed_user))
+        .route("/:game_id/shoot", post(shoot::shoot_request));
     // Add context middleware
     let app = Router::new()
         .route("/auth", post(auth_handler))
