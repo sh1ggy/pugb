@@ -35,12 +35,12 @@ async fn main() {
     let mut actor = actor::Actor::new();
     let api = Router::new()
         .route("/game_sse", get(game_sse_handler))
-        .route("/:id/get_user", get(get_refreshed_user))
-        .route("/:game_id/shoot", post(shoot::shoot_request));
+        .route("/get_user", get(get_refreshed_user))
+        .route("/:game_id/shoot", post(shoot::shoot_request)) ;
+
     // Add context middleware
     let app = Router::new()
         .route("/auth", post(auth_handler))
-        .route("/sample", post(auth_handler))
         .nest("/api", api)
         .with_state(req_client)
         .layer(middleware::map_response(main_response_mapper))
