@@ -5,7 +5,6 @@ export const userData: UserData = {
   username: "shiggy",
   avatar: "",
   premium_type: PremiumType.None,
-  rt: ""
 }
 
 // export const gameState: GameState = {

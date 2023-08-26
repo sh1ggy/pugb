@@ -3,7 +3,7 @@ import { useAtom } from 'jotai';
 import { Platform, TouchableOpacity } from 'react-native';
 import { Stack, Button, Text, View, XStack, YStack, Image, ScrollView, Spinner } from 'tamagui';
 import { userDataAtom, userGuildsAtom } from '../../lib/store';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, router } from 'expo-router';
 // import { players, userData } from '../../lib/mock'
 import { players } from '../../lib/mock'
@@ -60,11 +60,17 @@ export default function Game() {
 
   const sendPicture = async () => {
     if (!capturedImage || !killee) return;
+    console.log({capturedImage,killee});
     const data = new FormData();
+    // const fileName = capturedImage.uri.split('/').pop();
+    // const fileType = fileName.split('.').pop();
+
     data.append('image', capturedImage.uri);
+    data.append('title', "image");
     data.append('killee', killee.id as string);
     try {
-      const URL = `${SERVER_URL}/auth`
+      const URL = `${SERVER_URL}/api/shoot`
+      console.log(JSON.stringify(data))
       const res = await fetch(URL, {
         method: 'POST',
         body: data,
@@ -118,9 +124,9 @@ export default function Game() {
               autoFocus={!(Platform.OS == 'android')}
             >
               {isImageSaving &&
-              <Stack flex={1} ai={'center'} jc={'center'}>
-                <Spinner bg={'black'} br={'$3'} size="large" color="#5462eb"></Spinner>
-              </Stack>
+                <Stack flex={1} ai={'center'} jc={'center'}>
+                  <Spinner bg={'black'} br={'$3'} size="large" color="#5462eb"></Spinner>
+                </Stack>
               }
             </Camera>
             <Button bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
@@ -137,11 +143,11 @@ export default function Game() {
             <Button bg={'black'} onPress={() => { setCapturedImage(undefined) }}>Retake</Button>
           </YStack>
         }
+        <Button
+          onPress={sendPicture}
+          bg={'#8b89ac'}>Send Photo
+        </Button>
       </Stack>
-      <Button
-        onPress={sendPicture}
-        bg={'#8b89ac'}>Send Photo
-      </Button>
 
       {capturedImage && !dead &&
         <ScrollView maxHeight={'$6'} horizontal directionalLockEnabled={true} automaticallyAdjustContentInsets={false}>
@@ -152,10 +158,7 @@ export default function Game() {
                   <Avatar key={player.id}
                     circular size="$6"
                     pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
-                    onPress={(e) => {
-                      setKillee(player);
-                      console.log(killee);
-                    }}>
+                    onPress={() => setKillee(player)}>
                     <Avatar.Image src={player.avatar} />
                     <Avatar.Fallback bc="#55607b" />
                   </Avatar>
@@ -166,10 +169,7 @@ export default function Game() {
               <Avatar
                 circular size="$6"
                 pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
-                onPress={(e) => {
-                  setKillee(null);
-                  console.log(killee);
-                }}>
+                onPress={() => setKillee(null)}>
                 <Avatar.Image src={killee?.avatar} />
                 <Avatar.Fallback bc="red" />
               </Avatar>

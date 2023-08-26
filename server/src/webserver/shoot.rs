@@ -22,13 +22,26 @@ pub async fn save_request_body(
 pub async fn shoot_request(mut multipart: Multipart) -> Result<()> {
     while let Some(field) = multipart.next_field().await.unwrap() {
         println!("File: {:?}", field);
-        let file_name = if let Some(file_name) = field.file_name() {
-            file_name.to_owned()
+        let field_name = if let Some(field_name) = field.name() {
+            // println!("File_Name: {:?}", field_name);
+            field_name.to_owned()
         } else {
             continue;
         };
+        if (field_name == "image") {
+            stream_to_file(&"image", field).await?;
+        } else {
+            continue;
+        }
 
-        stream_to_file(&file_name, field).await?;
+
+        // let file_name = if let Some(file_name) = field.file_name() {
+        //     file_name.to_owned()
+        // } else {
+        //     continue;
+        // };
+
+        // stream_to_file(&field_name, field).await?;
     }
 
     Ok(())
@@ -50,7 +63,8 @@ where
 
     async {
         // Convert the stream into an `AsyncRead`.
-        let body_with_io_error = stream.map_err(|err| io::Error::new(io::ErrorKind::Other, err));
+        // let body_with_io_error = stream.map_err(|err| io::Error::new(io::ErrorKind::Other, err));
+        let body_with_io_error = stream.map_err(|e| );
         let body_reader = StreamReader::new(body_with_io_error);
         futures::pin_mut!(body_reader);
 
@@ -64,7 +78,9 @@ where
         Ok::<_, io::Error>(())
     }
     .await
-    .map_err(|err| Error::BadRequestInvalidStream  { inner: err.to_string() })
+    .unwrap();
+Ok(())
+    // .map_err(|err| Error::BadRequestInvalidStream  { inner: err.to_string() })
     // .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
 }
 // to prevent directory traversal attacks we ensure the path consists of exactly one normal
