@@ -48,6 +48,7 @@ export default function Pugb() {
       const codeRequestFn = async () => {
         console.log({ SERVER_URL, code, state })
         try {
+          // TODO validation
           const body = { code, state, code_verifier: request?.codeVerifier, redirect_uri: request?.redirectUri }
           const URL = `${SERVER_URL}/auth`
           const res = await fetch(URL, {
@@ -58,9 +59,14 @@ export default function Pugb() {
             body: JSON.stringify(body),
           });
           const jsonres: UserDataDTO = await res.json();
-          setUserGuilds(jsonres.guilds);
-          const { guilds, ...userDataTemp } = jsonres;
-          setUserData(userDataTemp);
+          let log = JSON.stringify(res, null, 2);
+          let secondLog = JSON.stringify(request, null, 2);
+          
+          // console.log({ jsonres, log, secondLog});
+          
+          // setUserGuilds(jsonres.guilds);
+          // const { guilds, ...userDataTemp } = jsonres;
+          // setUserData(userDataTemp);
         }
         catch (e) {
           console.log(e);
