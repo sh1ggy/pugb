@@ -58,11 +58,11 @@ export default function Pugb() {
           let log = JSON.stringify(res, null, 2);
           let secondLog = JSON.stringify(request, null, 2);
           
-          console.log({ jsonres,  });
+          console.log({ jsonres });
           
-          // setUserGuilds(jsonres.guilds);
-          // const { guilds, ...userDataTemp } = jsonres;
-          // setUserData(userDataTemp);
+          setUserGuilds(jsonres.guilds);
+          const { guilds, ...userDataTemp } = jsonres;
+          setUserData(userDataTemp);
         }
         catch (e) {
           console.log(e);
@@ -74,6 +74,7 @@ export default function Pugb() {
 
   return (
     <Stack bg={'#23252c'} space={"$4"} flex={1} jc={'center'} ai={'center'}>
+      <Text>{JSON.stringify(userData, null, 2)}</Text>
       <Button
         onPress={() => { promptAsync(); }}
         bg={'#5462eb'}>Login
