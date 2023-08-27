@@ -47,7 +47,7 @@ pub async fn shoot_request(
             bytes = Some(raw_bytes);
         } 
         else if (field_name == "killee") {
-
+            killee = Some(field.text().await.unwrap());
         }
         
         else {
