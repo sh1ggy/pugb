@@ -7,6 +7,7 @@ use serenity::model::prelude::ReactionType;
 use serenity::model::prelude::Ready;
 use serenity::prelude::*;
 use serenity::Client;
+use tokio::sync::oneshot;
 use tracing::info;
 
 use crate::actor::ActorRef;
@@ -40,8 +41,9 @@ struct Handler;
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if msg.content.starts_with("@start") {
-            let first_msg = msg.reply_mention(&ctx.http, "Sup back sexy").await.unwrap();
-
+            let first_msg = msg.reply_mention(&ctx.http, "Hey welcome to PuGB game, react to this message to join the game").await.unwrap();
+            let reaction_type: ReactionType = ReactionType:: Unicode("🎟\u{fe0f}".to_string());
+            first_msg.react(&ctx.http, reaction_type).await.unwrap();
             let channel = msg.channel(&ctx.http).await.unwrap();
             let mut game_name = msg.author.name;
             game_name.push_str("'s irl battlegrounds / wall of shame");
@@ -82,9 +84,29 @@ impl EventHandler for Handler {
     }
 
     
-    async fn reaction_add(&self, _ctx: Context, reaction: Reaction) {
+    async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
         println!("Reacty: {:?}", reaction);
         let join = ReactionType:: Unicode("🎟\u{fe0f}".to_string());
+        if reaction.emoji == join {
+            println!("Reacty: {:?}", reaction);
+            let channel = reaction.channel_id;
+            let guild = reaction.guild_id;
+            let message_id = reaction.message_id;
+            let user = reaction.user(ctx.http).await.unwrap();
+            let (send, recv) = oneshot::channel();
+
+            let internal_msg = InternalRequest::Join { message_id: message_id, user , res: send };
+
+            ctx.data
+                .write()
+                .await
+                .get::<ActorRef>()
+                .unwrap()
+                .sender
+                .send(internal_msg);
+            let result = recv.await.unwrap();
+
+        }
         
     }
 

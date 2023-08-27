@@ -6,7 +6,7 @@ use async_session::chrono;
 use serde_json::value::Index;
 use serde_json::{from_value, Value};
 use serenity::http::Http;
-use serenity::model::prelude::{AttachmentType, ChannelId, Guild, GuildChannel, GuildId, Message};
+use serenity::model::prelude::{AttachmentType, ChannelId, Guild, GuildChannel, GuildId, Message, MessageId};
 use serenity::model::user::User;
 use tokio::sync::{broadcast, mpsc, oneshot};
 
@@ -54,7 +54,7 @@ pub enum InternalRequest {
         res: oneshot::Sender<Result<()>>,
     },
     Join {
-        game_id: u64,
+        message_id: MessageId,
         user: User,
         res: oneshot::Sender<Result<()>>,
     },
@@ -142,6 +142,7 @@ impl Actor {
                 }
                 InternalRequest::Start_Game { msg, thread } => {
                     let mut game = Game {
+                        first_message: msg.id,
                         players: HashMap::new(),
                         thread,
                         killfeed: Vec::new(),
@@ -202,6 +203,7 @@ impl Actor {
                             let kill = Kill {
                                 image: res_img.attachments[0].url.clone(),
                                 id: self.kill_counter.to_string(),
+                                killmessageId: res_img.id,
                                 time: current_time,
                                 killerId: killer,
                                 killeeId: killee,
@@ -227,16 +229,16 @@ impl Actor {
                         }
                     }
                 }
-                InternalRequest::Join { game_id, user, res } =>  {
+                InternalRequest::Join { message_id, user, res } =>  {
                     let ctx = if let Some(ctx) = self.ctx.as_ref() {
                         ctx
                     } else {
                         continue;
                     };
 
-                    let chan_id = ChannelId(game_id);
+                    let game = self.games.values_mut().find(|g| {g.first_message == message_id});
 
-                    match self.games.get_mut(&chan_id) {
+                    match game {
                         Some(game) => {
                             let user_id = user.id.clone();
                             let player = Player {
@@ -249,7 +251,7 @@ impl Actor {
                         }
                         None => {
                             res.send(Err(Error::BadRequestInvalidParams {
-                                inner: format!("No Game of id {}", chan_id),
+                                inner: format!("No Game on the message of id {}", message_id),
                             }))
                             .unwrap();
                             continue;
