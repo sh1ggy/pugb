@@ -14,7 +14,6 @@ export const players: Player[] = [
     avatar: "http://placekitten.com/200/300",
     active: true,
     state: PlayerState.Alive,
-    premium_type: PremiumType.None,
   },
   {
     id: "2",
@@ -22,7 +21,6 @@ export const players: Player[] = [
     avatar: "http://placekitten.com/200/300",
     active: true,
     state: PlayerState.Alive,
-    premium_type: PremiumType.None,
   },
   {
     id: "3",
@@ -30,7 +28,6 @@ export const players: Player[] = [
     avatar: "http://placekitten.com/200/300",
     active: true,
     state: PlayerState.Alive,
-    premium_type: PremiumType.None,
   },
   {
     id: "4",
@@ -38,7 +35,6 @@ export const players: Player[] = [
     avatar: "http://placekitten.com/200/300",
     active: true,
     state: PlayerState.Alive,
-    premium_type: PremiumType.None,
   },
   {
     id: "5",
@@ -46,7 +42,6 @@ export const players: Player[] = [
     avatar: "http://placekitten.com/200/300",
     active: true,
     state: PlayerState.Alive,
-    premium_type: PremiumType.None,
   },
 ]
 
@@ -60,7 +55,7 @@ export const gameState: GameState = {
 export const game: Game = {
   thread: {
     name: "string",
-    started_by: "string",
+    owner: "string",
     id: "string",
     guildID: "string",
   },

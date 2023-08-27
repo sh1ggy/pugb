@@ -5,8 +5,9 @@ import { Stack, Button, Text, View, XStack, YStack, Image, ScrollView, Spinner }
 import { userDataAtom, userGuildsAtom } from '../../lib/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router } from 'expo-router';
-// import { players, userData } from '../../lib/mock'
+// import { players } from '../../lib/mock'
 import { game, players } from '../../lib/mock'
+// import { game } from '../../lib/mock'
 import { Avatar } from 'tamagui'
 import { GameState, Player } from '../../lib/types';
 import { GestureEvent, PinchGestureHandler, PinchGestureHandlerEventPayload } from 'react-native-gesture-handler';
@@ -26,6 +27,7 @@ export default function Game() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [zoom, setZoom] = useState(0);
   const [dead, setDead] = useState(false);
+  const [showKillFeed, setShowKillFeed] = useState(false);
 
   function toggleCameraType() {
     setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
@@ -74,7 +76,7 @@ export default function Game() {
   const sendPicture = async () => {
     // TODO conditionaly render this button so it doesnt appear when killee isnt selected
     if (!capturedImage || !killee) return;
-    console.log({ capturedImage, killee });
+    console.log({ capturedImage });
     const data = new FormData();
     // const response = await fetch(capturedImage.uri);
     // const picture = await response.blob();
@@ -89,9 +91,14 @@ export default function Game() {
     });
 
     data.append('title', "image");
-    data.append('killee', killee.id as string);
+    if (!dead) {
+      data.append('killee', killee.id as string);
+    }
+    else {
+      data.append('resPlayer', userData?.id as string);
+    }
     try {
-      const URL = `${SERVER_URL}/api/${game.thread.id}/shoot`
+      const URL = dead ? `${SERVER_URL}/api/${game.thread.id}/revive` : `${SERVER_URL}/api/${game.thread.id}/shoot`
       console.log(JSON.stringify(data))
       const res = await fetch(URL, {
         method: 'POST',
@@ -157,16 +164,37 @@ export default function Game() {
         {!capturedImage ?
           <PinchGestureHandler onGestureEvent={(e) => { changeZoom(e) }}>
             <YStack>
-              <Camera
-                ref={cameraRef}
-                type={type}
-                style={{ width: 300, height: 400 }}
-                autoFocus={!(Platform.OS == 'android')}
-                onCameraReady={() => setIsCameraLoading(true)}
-                zoom={zoom}
-              />
-              <Button fontSize={'$2'} bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
-              <Button bg={'black'} my={'$3'} onPress={takePicture} disabled={isCameraLoading ? false : true}>Shoot</Button>
+              {showKillFeed ?
+                <Stack w={300} h={400} bg={'#8b89ac'}>
+                  {gameState?.killFeed.map((kill) => {
+                    <XStack>
+                      <Text>{kill.time}</Text>
+                      <Text>{kill.killerId}</Text>
+                      <Text>{kill.killeeId}</Text>
+                    </XStack>
+                  })}
+                </Stack>
+                :
+                <>
+                  < Camera
+                    ref={cameraRef}
+                    type={type}
+                    style={{ width: 300, height: 400 }}
+                    autoFocus={!(Platform.OS == 'android')}
+                    onCameraReady={() => setIsCameraLoading(true)}
+                    zoom={zoom}
+                  />
+                </>
+              }
+              <XStack>
+                <Button flex={1} fontSize={'$2'} bg={'black'} onPress={() => setShowKillFeed(!showKillFeed)}>{showKillFeed ? "Camera" : "Kill Feed"}</Button>
+                {!showKillFeed &&
+                  <Button fontSize={'$2'} bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
+                }
+              </XStack>
+              {!showKillFeed &&
+                < Button bg={'black'} my={'$3'} onPress={takePicture} disabled={isCameraLoading ? false : true}>Shoot</Button>
+              }
             </YStack>
           </PinchGestureHandler>
           :
@@ -192,13 +220,11 @@ export default function Game() {
           </YStack>
         }
 
-        {!dead &&
-          <>
-            {capturedImage &&
-              <ScrollView maxHeight={'$6'} horizontal directionalLockEnabled={true} automaticallyAdjustContentInsets={false}>
-                <XStack gap={'$2'} maxHeight={'$6'}>
-                  {!killee &&
-                    game.gameState.allPlayers.map((player) => {
+        {capturedImage && !dead &&
+          <ScrollView maxHeight={'$6'} horizontal directionalLockEnabled={true} automaticallyAdjustContentInsets={false}>
+            <XStack gap={'$2'} maxHeight={'$6'}>
+              {/* {!killee &&
+                    game.gameState.players.map((player) => {
                       return (
                         <Avatar key={player.id}
                           circular size="$6"
@@ -209,21 +235,31 @@ export default function Game() {
                         </Avatar>
                       )
                     })
-                  }
-                  {killee &&
-                    <Avatar
+                  } */}
+              {killee &&
+                <Avatar
+                  circular size="$6"
+                  pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
+                  onPress={() => setKillee(null)}>
+                  <Avatar.Image src={killee.avatar} />
+                  <Avatar.Fallback bc="red" />
+                </Avatar>
+              }
+              {(killee == null) &&
+                players.map((player) => {
+                  return (
+                    <Avatar key={player.id}
                       circular size="$6"
                       pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
-                      onPress={() => setKillee(null)}>
-                      <Avatar.Image src={killee?.avatar} />
-                      <Avatar.Fallback bc="red" />
+                      onPress={() => setKillee(player)}>
+                      <Avatar.Image src={player.avatar} />
+                      <Avatar.Fallback bc="#55607b" />
                     </Avatar>
-                  }
-                </XStack>
-              </ScrollView>
-            }
-          </>
-
+                  )
+                })
+              }
+            </XStack>
+          </ScrollView>
         }
 
         <Button

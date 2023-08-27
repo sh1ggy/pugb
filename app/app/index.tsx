@@ -64,9 +64,9 @@ export default function Pugb() {
           console.log({ jsonres });
 
           setUserGuilds(jsonres.guilds);
-          const { guilds, ...userDataTemp } = jsonres;
-          setUserData(userDataTemp);
-          setUserGames(userDataTemp.games);
+          const { guilds, games, user } = jsonres;
+          setUserData(user);
+          setUserGames(games);
         }
         catch (e) {
           console.log(JSON.stringify(e, null, 2));
@@ -100,15 +100,16 @@ export default function Pugb() {
         console.log({ succjson });
 
         setUserGuilds(succjson.guilds);
-        const { guilds, ...userDataTemp } = succjson;
-        setUserData(userDataTemp);
-        setUserGames(userDataTemp.games);
+        const { guilds, games, user } = succjson;
+        setUserData(user);
+        setUserGames(games);
       }
       catch (e) {
         console.log("FORCE OAUTH", JSON.stringify(e, null, 2));
         // TODO handle error
         // const jsonres: JSONError | undefined = await (res?.json); 
         setForceAuth(true);
+        setIsLoading(false);
       }
     }
     userRequestFn();
