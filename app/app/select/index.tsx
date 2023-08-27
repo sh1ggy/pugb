@@ -1,6 +1,6 @@
-import { router } from "expo-router";
+import { Link, router } from "expo-router";
 import { Button, Stack, Text, XStack, YStack, Checkbox, ScrollView, Paragraph, Square, Avatar } from "tamagui";
-import { userDataAtom, userGamesAtom, userGuildsAtom } from "../../lib/store";
+import { selectedGameAtom, userDataAtom, userGamesAtom, userGuildsAtom } from "../../lib/store";
 import { useAtom } from "jotai";
 // import { userGuilds } from "../../lib/mock";
 import React, { useMemo, useState } from "react";
@@ -14,6 +14,7 @@ export default function Select() {
   const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const [userGames, setUserGames] = useAtom(userGamesAtom);
   const [userData, setUserData] = useAtom(userDataAtom);
+  const [selectedGame, setSelectedGame] = useAtom(selectedGameAtom);
 
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
@@ -23,7 +24,12 @@ export default function Select() {
       // TODO validation
       const URL = `${SERVER_URL}/api/get_user`
       setIsLoading(true);
-      res = await fetch(URL);
+      res = await fetch(URL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       const jsonres: any = await res.json();
       if (jsonres.error) {
         const errjson: JSONError = jsonres;
@@ -89,10 +95,17 @@ export default function Select() {
                   <Accordion.Content>
                     {guild.games.map((game) => {
                       return (
-                        <YStack onPress={() => router.push(`/game/${guild.games}`)} key={game.thread.id} gap={'$3'}>
+                        <Stack gap={'$3'}
+
+                          onPress={() => {
+                            setSelectedGame(game);
+                            console.log("RRRAAAAAHHHH", game)
+                            router.push('/game');
+                          }}>
+                          {/* <YStack onPress={() => router.push(`/game/${game.thread.id}`)} key={game.thread.id} gap={'$3'}> */}
                           <Text>{game.thread.id}</Text>
                           <Text>{game.thread.name}</Text>
-                        </YStack>
+                        </Stack>
                       )
                     })}
                   </Accordion.Content>
