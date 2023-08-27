@@ -131,10 +131,10 @@ export default function Pugb() {
               </Button>
             </>
           }
-          <Button
+          {/* <Button
             onPress={() => router.push('/select')}
             bg={'#5462eb'}>Game Select
-          </Button>
+          </Button> */}
         </>
       }
     </Stack >

@@ -42,7 +42,7 @@ export interface JSONError {
 
 export interface Game {
   thread: Thread,
-  gameState: GameState,
+  state: GameState,
 }
 
 export interface Thread {
@@ -54,8 +54,8 @@ export interface Thread {
 
 
 export enum PlayerState {
-  Alive,
-  Dead,
+  Alive = "Alive",
+  Dead = "Dead",
 }
 
 export interface Player {
