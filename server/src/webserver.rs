@@ -157,11 +157,12 @@ pub async fn game_sse_handler(
                             }))
                             .unwrap();
                         },
-                        // InternalBroadcast::Test {
-                        //     winner,
-                        // } => {
-
-                        // }
+                        InternalBroadcast::Winner {
+                            winner,
+                            game_id
+                        } => {
+                            
+                        }
 
                     }
 
