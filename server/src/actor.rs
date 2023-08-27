@@ -438,6 +438,7 @@ impl Actor {
             ("grant_type", "refresh_token".to_string()),
             ("refresh_token", rt.to_string()),
         ];
+        println!("Params for access token: {:?}", params);
         let mut headers = reqwest::header::HeaderMap::new();
 
         headers.insert(
@@ -461,12 +462,14 @@ impl Actor {
             .send()
             .await
             .unwrap()
-            .json::<DiscordTokenResponse>()
+            .text()
             .await
-            .map_err(|e| {
-                println!("Error, couldnt get rt: {:?}", e);
-                Error::AuthFailTokenExpired
-            })?;
+            .unwrap();
+        println!("Response: {:?}", &response);
+        let response = serde_json::from_str::<DiscordTokenResponse>(&response).map_err(|e| {
+            println!("Error, couldnt get rt: {:?}", e);
+            Error::AuthFailTokenExpired
+        })?;
 
         // println!("Response1: {:?}", response.text().await.unwrap());
         // let response = response.json::<Value>().await.unwrap();
