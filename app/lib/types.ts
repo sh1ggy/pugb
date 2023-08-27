@@ -59,9 +59,15 @@ export enum PlayerState {
 }
 
 export interface Player {
-  id: string,
-  username: string,
-  avatar: string,
+  user: {
+    id: string,
+    username: string,
+    avatar: string,
+    discriminator: string,
+    public_flags: number,
+    flags: number,
+    banner: string,
+  }
   active: boolean,
   state: PlayerState,
   // premium_type: PremiumType,

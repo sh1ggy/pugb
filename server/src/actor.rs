@@ -78,10 +78,10 @@ pub enum InternalBroadcast {
         killee: String,
         game_id: u64,
     },
-    // Winner {
-    //     winner: String,
-    //     game_id: u64,
-    // }
+    Winner {
+        winner: String,
+        game_id: u64,
+    }
 }
 
 fn time() -> u128 {
@@ -242,6 +242,22 @@ impl Actor {
                                     },
                                 })
                                 .unwrap();
+                            let alive_players: Vec<_> = game
+                                .players
+                                .values()
+                                .filter(|p| matches!( p.state, crate::models::PlayerState::Alive)).collect();
+                            
+                            let count = alive_players.len().clone();
+                            if (count == 1) {
+                                let winner = alive_players.first().unwrap().clone().user.id.to_string();
+
+                                self.broadcaster
+                                    .send(InternalBroadcast::Winner {
+                                        game_id: game_id,
+                                        winner,
+                                    })
+                                    .unwrap();
+                            }
                         }
                         None => {
                             res.send(Err(Error::BadRequestInvalidParams {
@@ -262,6 +278,11 @@ impl Actor {
                     } else {
                         continue;
                     };
+                    if (user.bot) {
+                        println!("Bot tried to join");
+                        continue;
+
+                    }
 
                     let game = self
                         .games
