@@ -85,6 +85,7 @@ export interface Kill {
   id: number,
   killerId: string,
   killeeId: string,
+  killmessageId : string,
   time: number,
   image: string, // CDN link
   state: KillState,

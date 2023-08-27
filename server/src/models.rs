@@ -5,6 +5,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use serenity::model::id::UserId;
+use serenity::model::prelude::MessageId;
 use serenity::model::{
     prelude::{ChannelId, Guild, GuildChannel},
     user::User,
@@ -75,6 +76,7 @@ pub struct DiscordTokenResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Game {
+    pub first_message: MessageId,
     pub thread: GuildChannel,
     pub players: HashMap<UserId, Player>,
     pub killfeed: Vec<Kill>,
@@ -85,6 +87,7 @@ pub struct Game {
 pub struct Kill {
     pub id: String,
     pub time: u128,
+    pub killmessageId: MessageId,
     pub killerId: String,
     pub killeeId: String,
     pub image: String,

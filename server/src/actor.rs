@@ -6,7 +6,7 @@ use async_session::chrono;
 use serde_json::value::Index;
 use serde_json::{from_value, Value};
 use serenity::http::Http;
-use serenity::model::prelude::{AttachmentType, ChannelId, Guild, GuildChannel, GuildId, Message};
+use serenity::model::prelude::{AttachmentType, ChannelId, Guild, GuildChannel, GuildId, Message, MessageId};
 use serenity::model::user::User;
 use tokio::sync::{broadcast, mpsc, oneshot};
 
@@ -53,6 +53,11 @@ pub enum InternalRequest {
         image: Vec<u8>,
         res: oneshot::Sender<Result<()>>,
     },
+    Join {
+        message_id: MessageId,
+        user: User,
+        res: oneshot::Sender<Result<()>>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +66,11 @@ pub enum InternalBroadcast {
     Test { msg: Message },
     // This is why you might want multiple broadcasters per game, or an mpsc per connection
     Kill { killfeed: Vec<Kill>, game_id: u64 },
+    Died {
+        killer: String,
+        killee: String,
+        game_id: u64,
+    },
 }
 
 fn time() -> u128 {
@@ -132,6 +142,7 @@ impl Actor {
                 }
                 InternalRequest::Start_Game { msg, thread } => {
                     let mut game = Game {
+                        first_message: msg.id,
                         players: HashMap::new(),
                         thread,
                         killfeed: Vec::new(),
@@ -192,6 +203,7 @@ impl Actor {
                             let kill = Kill {
                                 image: res_img.attachments[0].url.clone(),
                                 id: self.kill_counter.to_string(),
+                                killmessageId: res_img.id,
                                 time: current_time,
                                 killerId: killer,
                                 killeeId: killee,
@@ -217,6 +229,36 @@ impl Actor {
                         }
                     }
                 }
+                InternalRequest::Join { message_id, user, res } =>  {
+                    let ctx = if let Some(ctx) = self.ctx.as_ref() {
+                        ctx
+                    } else {
+                        continue;
+                    };
+
+                    let game = self.games.values_mut().find(|g| {g.first_message == message_id});
+
+                    match game {
+                        Some(game) => {
+                            let user_id = user.id.clone();
+                            let player = Player {
+                                active: crate::models::PlayerActive::NotActive,
+                                state: crate::models::PlayerState::Alive,
+                                user,
+                            };
+                            println!("Player joined: {:?} in game: {:?}", player, game);
+                            game.players.insert(user_id, player);
+                            res.send(Ok(())).unwrap();
+                        }
+                        None => {
+                            res.send(Err(Error::BadRequestInvalidParams {
+                                inner: format!("No Game on the message of id {}", message_id),
+                            }))
+                            .unwrap();
+                            continue;
+                        }
+                    }
+                },
             }
         }
     }
