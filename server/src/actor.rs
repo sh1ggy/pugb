@@ -61,6 +61,13 @@ pub enum InternalRequest {
         user: User,
         res: oneshot::Sender<Result<()>>,
     },
+    Rez {
+        game_id: u64,
+        player: String,
+        image: Vec<u8>,
+        res: oneshot::Sender<Result<()>>,
+    },
+    
 }
 
 #[derive(Debug, Clone)]
@@ -71,8 +78,7 @@ pub enum InternalBroadcast {
     },
     // This is why you might want multiple broadcasters per game, or an mpsc per connection
     Kill {
-        killfeed: Vec<Kill>,
-        game_id: u64,
+        game_state: GameStateDTO,
     },
     Died {
         killer: String,
@@ -220,6 +226,7 @@ impl Actor {
                                 killerId: killer,
                                 killeeId: killee,
                                 state: crate::models::KillState::Normal,
+                                
                             };
                             game.killfeed.push(kill);
 
@@ -278,6 +285,9 @@ impl Actor {
                         }
                     }
                 }
+                InternalRequest::Rez { game_id, player, image, res } => {
+
+                },
             }
         }
     }

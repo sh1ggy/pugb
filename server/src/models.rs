@@ -92,12 +92,17 @@ pub struct Kill {
     pub killeeId: String,
     pub image: String,
     pub state: KillState,
+    pub feedtype: FeedType,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 
 pub enum KillState {
     Contested,
     Normal,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum FeedType {
+    Rez, Kill
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

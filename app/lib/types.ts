@@ -89,12 +89,9 @@ export interface Kill {
   time: number,
   image: string, // CDN link
   state: KillState,
+  feedtype: FeedType,
 }
 
-export interface Revive {
-  id: string,
-  playerId: string,
-  killId: string,
-  image: string // CDN link
-
+export enum FeedType {
+  Rez, Kill
 }
