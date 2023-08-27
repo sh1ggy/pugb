@@ -88,7 +88,7 @@ pub struct Actor {
     pub http_req: reqwest::Client,
 
     // pub users: HashMap<String, UserData>,
-    pub users: HashMap<String, UserDataDTO>,
+    pub users: HashMap<String, (UserData, Vec<GuildDTO>)>,
     pub games: HashMap<ChannelId, Game>,
     // pub guilds: Option<Vec<GuildId>>,
     pub guilds: Vec<GuildId>,
@@ -180,6 +180,8 @@ impl Actor {
 
                     match self.games.get_mut(&chan_id) {
                         Some(game) => {
+
+                            let killee_clone = killee.clone();
                             let res_img = game
                                 .thread
                                 .send_message(ctx, move |m| {
@@ -187,7 +189,10 @@ impl Actor {
                                         data: image.into(),
                                         filename: "Hey man.jpg".into(),
                                     };
-                                    m.add_file(attatchment)
+                                    let kileeId: u64 = killee_clone.parse().unwrap();
+                                    m.add_file(attatchment);
+                                    m.allowed_mentions(|am| {am.empty_parse().users(vec![kileeId])});
+                                    m
                                 })
                                 .await
                                 .unwrap();
@@ -265,36 +270,23 @@ impl Actor {
 
     pub async fn get_user(&mut self, rt: String) -> Result<UserDataDTO> {
         // Get user from hashmap, if doesnt exist make request to discord api
-        if let Some(user) = self.users.get(&rt) {
-            return Ok(user.clone());
-        } else {
-            // Fetch the user from the API
-            let user = self.refresh_user(rt.clone()).await?;
-            // Store the fetched user in the cache
-            // Save all details of user on the cache// TODO db
-            self.users.insert(rt.clone(), user.clone());
-            Ok(user)
-        }
-    }
-    pub async fn refresh_user(&mut self, rt: String) -> Result<UserDataDTO> {
-        let mut access_token = self.get_access_token(&rt).await?;
-        access_token.insert_str(0, "Bearer ");
-        let fetched_user = self.get_user_from_api(&access_token, &rt).await?;
-        let user_guilds = self.get_user_guilds(&access_token).await?;
         
-        // let joined_guilds:Vec<&GuildId> = user_guilds.iter().map(|f| {
-        //     let matching_guild = self.guilds
-        //         .iter()
-        //         .find(|g| g.0.to_string() == f.id);
-        //     matching_guild
-                
+        
+        let stuff = match self.users.get(&rt) {
+            Some(user) => {
+                println!("User found in cache");
+                user.clone()
+            }
+            None => {
+                println!("User not found in cache");
+                self.refresh_user(rt.clone()).await?
+            }
+        };
+        
 
-        // }).filter_map(|f| f.clone())
-        // .collect();
-        // println!("joined_guilds: {:?}", joined_guilds);
         let avail_games = self.games.values().filter(|game| {
             game.players.iter().find(|(id, player)| {
-                id.0.to_string() == fetched_user.id
+                id.0.to_string() == stuff.0.id
             }).is_some()
         }).map(|g| { 
             GameDTO {
@@ -311,17 +303,38 @@ impl Actor {
             }
         }).collect();
 
+        let dto = UserDataDTO {
+            user: stuff.0,
+            guilds: stuff.1,
+            games: avail_games,
+        };
+        Ok(dto)
+    }
+    pub async fn refresh_user(&mut self, rt: String) -> Result<(UserData, Vec<GuildDTO>)> {
+        let mut access_token = self.get_access_token(&rt).await?;
+        access_token.insert_str(0, "Bearer ");
+        let fetched_user = self.get_user_from_api(&access_token, &rt).await?;
+        let user_guilds = self.get_user_guilds(&access_token).await?;
+        
+        // let joined_guilds:Vec<&GuildId> = user_guilds.iter().map(|f| {
+        //     let matching_guild = self.guilds
+        //         .iter()
+        //         .find(|g| g.0.to_string() == f.id);
+        //     matching_guild
+                
+
+        // }).filter_map(|f| f.clone())
+        // .collect();
+        // println!("joined_guilds: {:?}", joined_guilds);
+       
+
         // Store the fetched user in the cache
         // Save all details of user on the cache// TODO db
         // self.users.insert(rt, fetched_user.clone());
         // Ok(fetched_user)
 
-        let dto = UserDataDTO {
-            user: fetched_user,
-            guilds: user_guilds,
-            games: avail_games,
-        };
-        Ok(dto)
+       
+        Ok((fetched_user, user_guilds))
     }
 
     async fn get_user_guilds(&self, access_token: &str) -> Result<Vec<GuildDTO>> {
