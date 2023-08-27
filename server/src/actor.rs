@@ -70,9 +70,8 @@ pub enum InternalBroadcast {
         msg: Message,
     },
     // This is why you might want multiple broadcasters per game, or an mpsc per connection
-    Kill {
-        killfeed: Vec<Kill>,
-        game_id: u64,
+    GameStateUpdate {
+        game_state: GameStateDTO
     },
     Died {
         killer: String,
@@ -226,9 +225,12 @@ impl Actor {
                             res.send(Ok(())).unwrap();
 
                             self.broadcaster
-                                .send(InternalBroadcast::Kill {
-                                    killfeed: game.killfeed.clone(),
-                                    game_id: game.thread.id.0,
+                                .send(InternalBroadcast::GameStateUpdate {
+                                    game_state: GameStateDTO {
+                                        thread: game.thread.id,
+                                        players: game.players.values().map(|x| x.clone()).collect(),
+                                        killfeed: game.killfeed.clone(),
+                                    }
                                 })
                                 .unwrap();
                         }
