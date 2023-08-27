@@ -28,7 +28,7 @@ async fn main() {
     println!("Token: {}", token);
 
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        // .with_max_level(tracing::Level::DEBUG)
         .init();
     let req_client = reqwest::Client::new();
 

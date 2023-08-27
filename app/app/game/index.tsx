@@ -190,6 +190,8 @@ export default function Game() {
                         </>
                       ))
                     }
+                    {/* <Text>{JSON.stringify(selectedGame)}</Text> */}
+                    <Text>{JSON.stringify(selectedGame?.state.players)}</Text>
                   </ScrollView>
 
                   {/* {gameState.killFeed.map((kill) => {
