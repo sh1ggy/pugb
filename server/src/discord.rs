@@ -107,6 +107,7 @@ impl EventHandler for Handler {
             let result = recv.await.unwrap();
 
         }
+        // TODO monitor emoji remove to see if player leave game
         
     }
 
