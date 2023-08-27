@@ -294,6 +294,8 @@ impl Actor {
         // println!("joined_guilds: {:?}", joined_guilds);
         let avail_games = self.games.values().filter(|game| {
             game.players.iter().find(|(id, player)| {
+                println!();
+                println!("g:{:?}, p:{:?}", game, player);
                 id.0.to_string() == fetched_user.id
             }).is_some()
         }).map(|g| { 

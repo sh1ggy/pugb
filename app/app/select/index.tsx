@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { Button, Stack, Text, XStack, YStack, Checkbox, ScrollView, Paragraph, Square, Avatar } from "tamagui";
 import { userGamesAtom, userGuildsAtom } from "../../lib/store";
 import { useAtom } from "jotai";
-import { userGuilds } from "../../lib/mock";
+// import { userGuilds } from "../../lib/mock";
 import React, { useMemo, useState } from "react";
 import { TouchableOpacity } from "react-native";
 import { Accordion } from 'tamagui';
@@ -10,9 +10,8 @@ import { ChevronDown } from "@tamagui/lucide-icons";
 import { JSONError, UserDataDTO } from "../../lib/types";
 
 export default function Select() {
-  // const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const [isLoading, setIsLoading] = useState(false);
-  // const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
+  const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const [userGames, setUserGames] = useAtom(userGamesAtom);
 
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
@@ -42,19 +41,26 @@ export default function Select() {
     }
   }
 
-  useMemo(() => {
-    
-  }, [])
+  const activeGuilds = useMemo(() => {
+    if (!userGuilds || !userGames) return [];
+    return userGuilds.map((guild) => {
+      const guildGames = userGames.filter((game) => {
+        return game.thread.guildID == guild.id
+      });
+      return { ...guild, games: guildGames };
+    }).filter((guilds) => guilds.games.length !== 0)
+  }, [userGuilds, userGames])
 
   return (
     <Stack bg={'#23252c'} space={"$4"} my={'$10'}>
       <Text mx={'$3'} textAlign="center" fos={'$10'} fontFamily={'$body'} color={'#8b89ac'}>Select Game</Text>
       <Text mb={'$3'} mx={'$3'} textAlign="center">Please invite PUGB Bot to your Discord server of choice and run the <Text color={'#707eff'}>@start</Text>  command to instantiate a game</Text>
       <Text textAlign="center" mb={'$3'} mx={'$3'}>Press <Text color={'#707eff'}>Refresh</Text> in order to get an updated list of servers that have active games</Text>
+      {/* <Text>{JSON.stringify(userGames, null, 2)}</Text> */}
       <ScrollView horizontal={false} m={'$4'}>
-        <Accordion space={'$4'} br={'$3'} type="multiple">
+        <Accordion space={'$4'} br={'$3'} type="multiple" collapsable={false}>
           {
-            userGuilds?.map((guild, index) => {
+            activeGuilds?.map((guild, index) => {
               return (
                 <Accordion.Item key={guild.id} flex={1} bg={'#5462eb'} value={`a${index}`} onPress={() => router.push(`/game/${guild.name}`)}>
                   <Accordion.Trigger flexDirection="row" justifyContent="space-between">
@@ -73,9 +79,14 @@ export default function Select() {
                     )}
                   </Accordion.Trigger>
                   <Accordion.Content>
-                    <Paragraph>
-                      {guild.id}
-                    </Paragraph>
+                    {guild.games.map((game) => {
+                      return (
+                        <YStack gap={'$3'}>
+                          <Text key={game.thread.id}>{game.thread.id}</Text>
+                          <Text key={game.thread.id}>{game.thread.name}</Text>
+                        </YStack>
+                      )
+                    })}
                   </Accordion.Content>
                 </Accordion.Item>
               )
