@@ -46,7 +46,7 @@ export default function Game() {
   }
 
   function startEventSource() {
-    const eventSource = new EventSource(`${SERVER_URL}/game_sse`);
+    const eventSource = new EventSource(`${SERVER_URL}/api/${selectedGame?.thread.id}/game_sse/${userData?.id}`);
     eventSource.addEventListener('message', (event) => {
       console.log({ event });
       setGameState(event.data);
@@ -104,7 +104,7 @@ export default function Game() {
 
     data.append('title', "image");
     if (!dead) {
-      data.append('killee', killee.id as string);
+      data.append('killee', killee.user.id as string);
     }
     else {
       data.append('resPlayer', userData?.id as string);
@@ -182,10 +182,10 @@ export default function Game() {
                       selectedGame?.state.players.map((player) => (
                         <>
                           <Avatar circular size="$3">
-                            <Avatar.Image src={`https://cdn.discordapp.com/avatars/${player?.id}/${player?.avatar}.png`} />
+                            <Avatar.Image src={`https://cdn.discordapp.com/avatars/${player?.user.id}/${player?.user.avatar}.png`} />
                             <Avatar.Fallback bc="#8b89ac" />
                           </Avatar>
-                          <Text>{player.username}</Text>
+                          <Text>{player.user.username}</Text>
                           <Text>{player.state}</Text>
                         </>
                       ))
@@ -256,18 +256,18 @@ export default function Game() {
                   circular size="$6"
                   pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
                   onPress={() => setKillee(null)}>
-                  <Avatar.Image src={`https://cdn.discordapp.com/avatars/${killee?.id}/${killee?.avatar}.png`} />
+                  <Avatar.Image src={`https://cdn.discordapp.com/avatars/${killee?.user.id}/${killee?.user.avatar}.png`} />
                   <Avatar.Fallback bc="#55607b" />
                 </Avatar>
               }
               {(killee == null && players) &&
                 players.map((player) => {
                   return (
-                    <Avatar key={player.id}
+                    <Avatar key={player.user.id}
                       circular size="$6"
                       pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
                       onPress={() => setKillee(player)}>
-                      <Avatar.Image src={`https://cdn.discordapp.com/avatars/${player?.id}/${player?.avatar}.png`} />
+                      <Avatar.Image src={`https://cdn.discordapp.com/avatars/${player?.user.id}/${player?.user.avatar}.png`} />
                       <Avatar.Fallback bc="#55607b" />
                     </Avatar>
                   )
