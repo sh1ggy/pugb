@@ -16,7 +16,7 @@ use crate::actor::InternalRequest;
 pub async fn build_client(actor: ActorRef) -> Client {
     let token = std::env::var("DISCORD_TOKEN").unwrap();
     // let intents = GatewayIntents::default() | GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
-    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGE_REACTIONS | GatewayIntents::DIRECT_MESSAGE_REACTIONS | GatewayIntents::all();
+    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGE_REACTIONS | GatewayIntents::DIRECT_MESSAGE_REACTIONS;
     let mut client = Client::builder(&token, intents)
         // .framework(framework)
         .event_handler(Handler)
