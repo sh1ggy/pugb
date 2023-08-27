@@ -31,18 +31,13 @@ pub async fn shoot_request(
     let mut killee: Option<String> = None;
 
     while let Some(field) = multipart.next_field().await.unwrap() {
-        println!("File: {:?}", field);
         let field_name = if let Some(field_name) = field.name() {
-            // println!("File_Name: {:?}", field_name);
             field_name.to_owned()
         } else {
             continue;
         };
-        // println!("Field_name: {field_name}");
         if (field_name == "image") {
-            // stream_to_file(&"image", field).await?;
             let bytes_struct: Bytes = field.bytes().await.unwrap();
-            println!("HEY MAN, GOT IMAGE {:?}", bytes_struct);
             let raw_bytes: Vec<u8> = bytes_struct.into();
             bytes = Some(raw_bytes);
         } 
@@ -54,6 +49,7 @@ pub async fn shoot_request(
             continue;
         }
     }
+
 
     let bytes = match bytes {
         Some(bytes) => bytes,
@@ -75,6 +71,7 @@ pub async fn shoot_request(
 
     let (send, recv) = oneshot::channel();
     let killer = user.user.id.to_string(); 
+    println!("Killer: {:?}, game: {}, killee: {}", user, game_id, killee);
     actor
         .sender
         .send(InternalRequest::Shoot {
