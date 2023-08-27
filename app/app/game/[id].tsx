@@ -2,7 +2,7 @@ import { Camera, CameraCapturedPicture, CameraPictureOptions, CameraType } from 
 import { useAtom } from 'jotai';
 import { Platform, TouchableOpacity } from 'react-native';
 import { Stack, Button, Text, View, XStack, YStack, Image, ScrollView, Spinner } from 'tamagui';
-import { userDataAtom, userGuildsAtom } from '../../lib/store';
+import { userDataAtom, userGamesAtom, userGuildsAtom } from '../../lib/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router } from 'expo-router';
 // import { players } from '../../lib/mock'
@@ -11,12 +11,14 @@ import { game, players } from '../../lib/mock'
 import { Avatar } from 'tamagui'
 import { GameState, Player } from '../../lib/types';
 import { GestureEvent, PinchGestureHandler, PinchGestureHandlerEventPayload } from 'react-native-gesture-handler';
-// import { userData } from '../../lib/mock';
+import { userData } from '../../lib/mock';
 
 export default function Game() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
-  const [userData, setUserData] = useAtom(userDataAtom);
+  // const [userData, setUserData] = useAtom(userDataAtom);
+  // const [userGames, setUserGames] = useAtom(userGamesAtom);
+  // const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const cameraRef = useRef<Camera | null>(null);
   const [type, setType] = useState(CameraType.back);
   const [permission, requestPermission] = Camera.useCameraPermissions();

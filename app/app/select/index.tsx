@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { Button, Stack, Text, XStack, YStack, Checkbox, ScrollView, Paragraph, Square, Avatar } from "tamagui";
-import { userGamesAtom, userGuildsAtom } from "../../lib/store";
+import { userDataAtom, userGamesAtom, userGuildsAtom } from "../../lib/store";
 import { useAtom } from "jotai";
 // import { userGuilds } from "../../lib/mock";
 import React, { useMemo, useState } from "react";
@@ -13,6 +13,7 @@ export default function Select() {
   const [isLoading, setIsLoading] = useState(false);
   const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const [userGames, setUserGames] = useAtom(userGamesAtom);
+  const [userData, setUserData] = useAtom(userDataAtom);
 
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
@@ -26,15 +27,22 @@ export default function Select() {
       const jsonres: any = await res.json();
       if (jsonres.error) {
         const errjson: JSONError = jsonres;
-        console.log(JSON.stringify(errjson, null, 2))
-        setIsLoading(false);
-        return;
+        if (errjson.error.type == "AuthFailTokenExpired") {
+          console.log(JSON.stringify(errjson, null, 2))
+          setIsLoading(false);
+          router.push("/")
+          return;
+        }
       }
       const succjson: UserDataDTO = jsonres;
       setIsLoading(false);
+      setUserGuilds(succjson.guilds);
+      const { guilds, games, user } = succjson;
+      setUserData(user);
+      setUserGames(games);
       console.log({ succjson });
 
-      // setUserGuilds(succjson.guilds);
+      setUserGuilds(succjson.guilds);
     }
     catch (e) {
       console.log(JSON.stringify(e, null, 2));
@@ -62,7 +70,7 @@ export default function Select() {
           {
             activeGuilds?.map((guild, index) => {
               return (
-                <Accordion.Item key={guild.id} flex={1} bg={'#5462eb'} value={`a${index}`} onPress={() => router.push(`/game/${guild.name}`)}>
+                <Accordion.Item key={guild.id} flex={1} bg={'#5462eb'} value={`a${index}`}>
                   <Accordion.Trigger flexDirection="row" justifyContent="space-between">
                     {({ open }: any) => (
                       <XStack gap={'$3'}>
@@ -81,9 +89,9 @@ export default function Select() {
                   <Accordion.Content>
                     {guild.games.map((game) => {
                       return (
-                        <YStack gap={'$3'}>
-                          <Text key={game.thread.id}>{game.thread.id}</Text>
-                          <Text key={game.thread.id}>{game.thread.name}</Text>
+                        <YStack onPress={() => router.push(`/game/${guild.games}`)} key={game.thread.id} gap={'$3'}>
+                          <Text>{game.thread.id}</Text>
+                          <Text>{game.thread.name}</Text>
                         </YStack>
                       )
                     })}
