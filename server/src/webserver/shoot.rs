@@ -16,17 +16,16 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::auth::ctx_resolver;
 
 // https://github.com/tokio-rs/axum/blob/24f0f3eae8054c7a495cd364087f2dd7fa8b87e0/examples/stream-to-file/src/main.rs
 
 pub async fn shoot_request(
-    Path(game_id): Path<u64>,
+    Path((game_id, user_id)): Path<(u64, u64)>,
     Extension(actor): Extension<ActorRef>,
     cookies: Cookies,
     mut multipart: Multipart,
 ) -> Result<()> {
-    let user = ctx_resolver(actor.clone(), &cookies).await?;
+    // let user = ctx_resolver(actor.clone(), &cookies).await?;
     let mut bytes: Option<Vec<u8>> = None;
     let mut killee: Option<String> = None;
 
@@ -70,8 +69,8 @@ pub async fn shoot_request(
     };
 
     let (send, recv) = oneshot::channel();
-    let killer = user.user.id.to_string(); 
-    println!("Killer: {:?}, game: {}, killee: {}", user, game_id, killee);
+    let killer = user_id.to_string(); 
+    println!("Killer: {:?}, game: {}, killee: {}", user_id, game_id, killee);
     actor
         .sender
         .send(InternalRequest::Shoot {

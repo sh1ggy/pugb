@@ -7,7 +7,7 @@ use serde_json::value::Index;
 use serde_json::{from_value, Value};
 use serenity::http::Http;
 use serenity::model::prelude::{
-    AttachmentType, ChannelId, Guild, GuildChannel, GuildId, Message, MessageId,
+    AttachmentType, ChannelId, Guild, GuildChannel, GuildId, Message, MessageId, UserId,
 };
 use serenity::model::user::User;
 use tokio::sync::{broadcast, mpsc, oneshot};
@@ -71,13 +71,17 @@ pub enum InternalBroadcast {
     },
     // This is why you might want multiple broadcasters per game, or an mpsc per connection
     GameStateUpdate {
-        game_state: GameStateDTO
+        game_state: GameStateDTO,
     },
     Died {
         killer: String,
         killee: String,
         game_id: u64,
     },
+    // Winner {
+    //     winner: String,
+    //     game_id: u64,
+    // }
 }
 
 fn time() -> u128 {
@@ -217,9 +221,13 @@ impl Actor {
                                 killmessageId: res_img.id,
                                 time: current_time,
                                 killerId: killer,
-                                killeeId: killee,
+                                killeeId: killee.clone(),
                                 state: crate::models::KillState::Normal,
                             };
+                            let killee_id = killee.parse::<u64>().unwrap();
+                            let killee_id = UserId(killee_id);
+                            game.players.get_mut(&killee_id).unwrap().state =
+                                crate::models::PlayerState::Dead;
                             game.killfeed.push(kill);
 
                             res.send(Ok(())).unwrap();
@@ -230,7 +238,7 @@ impl Actor {
                                         thread: game.thread.id,
                                         players: game.players.values().map(|x| x.clone()).collect(),
                                         killfeed: game.killfeed.clone(),
-                                    }
+                                    },
                                 })
                                 .unwrap();
                         }
