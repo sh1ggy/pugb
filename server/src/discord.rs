@@ -40,7 +40,7 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.content.starts_with("@start") {
+        if msg.content.starts_with("$start") {
             let first_msg = msg.reply_mention(&ctx.http, "Hey welcome to PuGB game, react to this message to join the game").await.unwrap();
             let reaction_type: ReactionType = ReactionType:: Unicode("🎟\u{fe0f}".to_string());
             first_msg.react(&ctx.http, reaction_type).await.unwrap();
