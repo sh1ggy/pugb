@@ -24,7 +24,6 @@ use crate::{
 
 use crate::error::{Error, Result};
 
-use self::auth::ctx_resolver;
 
 pub mod auth;
 pub mod shoot;
@@ -95,37 +94,20 @@ pub async fn auth_handler(
     }
 }
 
-pub async fn get_refreshed_user(
-    // State(req_client): State<reqwest::Client>,
-    Extension(actor): Extension<ActorRef>,
-    cookies: Cookies,
-) -> Result<Json<UserDataDTO>> {
-    let user = ctx_resolver(actor.clone(), &cookies).await?;
-    // let body = Json(json!({
-    //     "result": {
-    //         "success": true
-    //     },
-    //     "game": {
-    //         "id": thread_id
-    //     }
-    // }));
-    // Err(Error::AuthFailNoAuthTokenCookie)
-    Ok(Json(user))
-}
-
 // Get query param for game id
 pub async fn game_sse_handler(
-    Path(game_id): Path<u64>,
+    Path((game_id_param, user_id)): Path<(u64, u64)>,
     Extension(actor): Extension<ActorRef>,
     cookies: Cookies,
 ) -> Sse<impl Stream<Item = core::result::Result<Event, Infallible>>> {
     println!("Cookies: {:?}", cookies.get("hello_world"));
-    let user = ctx_resolver(actor.clone(), &cookies).await;
+
     let mut rx = actor.broadcast.subscribe();
     let thign = Event::default().json_data("Hello, world!").unwrap().id("1");
     let guard = SSEGuard {
         actor: actor.clone(),
     };
+    // let user_id = user.unwrap().user.id.to_string();
 
     // let mut event = Event::default().event(event)
 
@@ -145,7 +127,7 @@ pub async fn game_sse_handler(
                             .unwrap();
                         },
                         InternalBroadcast::GameStateUpdate {game_state} => {
-                            if (game_state.thread.0 != game_id) {
+                            if (game_state.thread.0 != game_id_param) {
                                 continue;
                             }
                             println!("Killfeed: {:?}", game_state.killfeed);
@@ -159,8 +141,27 @@ pub async fn game_sse_handler(
                             killee,
                             game_id,
                         } => {
+                            if (game_id != game_id_param) {
+                                continue;
+                            }
+                            if (killee != user_id.to_string().clone()) {
+                                continue;
+                            }
+                            println!("Killer: {}, killee: {}", killer, killee);
+                            event = Event::default()
+                            .event("died")
+                            .json_data(json!({
+                                "killer": killer,
+                                "killee": killee,
+                                "game_id": game_id
+                            }))
+                            .unwrap();
+                        },
+                        // InternalBroadcast::Test {
+                        //     winner,
+                        // } => {
 
-                        }
+                        // }
 
                     }
 
@@ -193,5 +194,3 @@ pub struct CodeRequestDTO {
     code_verifier: String,
     redirect_uri: String,
 }
-
-struct CodeResponseDTO {}

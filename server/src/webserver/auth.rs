@@ -41,25 +41,25 @@ use crate::{
 //     Ok(next.run(req).await)
 // }
 
-pub async fn ctx_resolver(
-    (actor): ActorRef,
-    cookies: &Cookies,
-) -> Result<UserDataDTO> {
-    println!("->> {:<12} - mw_ctx_resolver", "MIDDLEWARE");
-    let auth_token = cookies.get(AUTH_COOKIE).map(|c| c.value().to_string());
-    match auth_token {
-        Some(rt) => {
-            println!("    ->> auth_token: {}", rt);
-            let (tx, rx) = oneshot::channel();
-            let req = InternalRequest::GetUser { rt, res: tx };
-            actor.sender.send(req).unwrap();
-            let user_data = rx.await.unwrap()?;
-            println!("    ->> user_data: {:?}", user_data);
-			return Ok(user_data);
-        }
-        None => return Err(Error::AuthFailNoAuthTokenCookie),
-    }
-}
+// pub async fn ctx_resolver(
+//     (actor): ActorRef,
+//     cookies: &Cookies,
+// ) -> Result<UserDataDTO> {
+//     println!("->> {:<12} - mw_ctx_resolver", "MIDDLEWARE");
+//     let auth_token = cookies.get(AUTH_COOKIE).map(|c| c.value().to_string());
+//     match auth_token {
+//         Some(rt) => {
+//             println!("    ->> auth_token: {}", rt);
+//             let (tx, rx) = oneshot::channel();
+//             let req = InternalRequest::GetUser { rt, res: tx };
+//             actor.sender.send(req).unwrap();
+//             let user_data = rx.await.unwrap()?;
+//             println!("    ->> user_data: {:?}", user_data);
+// 			return Ok(user_data);
+//         }
+//         None => return Err(Error::AuthFailNoAuthTokenCookie),
+//     }
+// }
 
 
 pub async fn main_response_mapper(
