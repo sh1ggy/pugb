@@ -192,6 +192,7 @@ impl Actor {
                     match self.games.get_mut(&chan_id) {
                         Some(game) => {
                             let killee_clone = killee.clone();
+                            let killer_clone = killer.clone();
                             println!("kille{:?}, game{:?}", killee_clone, game);
                             let res_img = game
                                 .thread
@@ -201,8 +202,17 @@ impl Actor {
                                         filename: "Hey man.jpg".into(),
                                     };
                                     let kileeId: u64 = killee_clone.parse().unwrap();
+                                    let kileeId = UserId(kileeId);
+                                    let killer_id: u64= killer_clone.parse().unwrap();
+                                    let killer_id = UserId(killer_id);
+                            
                                     m.add_file(attatchment);
-                                    m.allowed_mentions(|am| am.empty_parse().users(vec![kileeId]));
+                                    m.content(format!(
+                                        "<@{}> was killed by <@{}>",
+                                        killee_clone, killer_clone
+                                    ));
+
+                                    m.allowed_mentions(|am| am.empty_parse().users(vec![kileeId, killer_id]));
                                     m
                                 })
                                 .await
@@ -279,6 +289,7 @@ impl Actor {
                     };
                     if (user.bot) {
                         println!("Bot tried to join");
+                        // Just continue doesnt work
                         continue;
                     } else {
                         let game = self
