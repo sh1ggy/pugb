@@ -1,15 +1,50 @@
 import { router } from "expo-router";
 import { Button, Stack, Text, XStack, YStack, Checkbox, ScrollView, Paragraph, Square, Avatar } from "tamagui";
-import { userGuildsAtom } from "../../lib/store";
+import { userGamesAtom, userGuildsAtom } from "../../lib/store";
 import { useAtom } from "jotai";
-// import { userGuilds } from "../../lib/mock";
-import React from "react";
+import { userGuilds } from "../../lib/mock";
+import React, { useMemo, useState } from "react";
 import { TouchableOpacity } from "react-native";
 import { Accordion } from 'tamagui';
 import { ChevronDown } from "@tamagui/lucide-icons";
+import { JSONError, UserDataDTO } from "../../lib/types";
 
 export default function Select() {
-  const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
+  // const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
+  const [isLoading, setIsLoading] = useState(false);
+  // const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
+  const [userGames, setUserGames] = useAtom(userGamesAtom);
+
+  const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
+
+  const guildRequestFn = async () => {
+    let res;
+    try {
+      // TODO validation
+      const URL = `${SERVER_URL}/api/get_user`
+      setIsLoading(true);
+      res = await fetch(URL);
+      const jsonres: any = await res.json();
+      if (jsonres.error) {
+        const errjson: JSONError = jsonres;
+        console.log(JSON.stringify(errjson, null, 2))
+        setIsLoading(false);
+        return;
+      }
+      const succjson: UserDataDTO = jsonres;
+      setIsLoading(false);
+      console.log({ succjson });
+
+      // setUserGuilds(succjson.guilds);
+    }
+    catch (e) {
+      console.log(JSON.stringify(e, null, 2));
+    }
+  }
+
+  useMemo(() => {
+    
+  }, [])
 
   return (
     <Stack bg={'#23252c'} space={"$4"} my={'$10'}>
@@ -49,7 +84,10 @@ export default function Select() {
         </Accordion>
       </ScrollView>
       <Button
-        onPress={() => console.log('refresh')}
+        onPress={() => {
+          console.log("REFRESH");
+          guildRequestFn();
+        }}
         bg={'#5462eb'}>Refresh
       </Button>
       <Button
