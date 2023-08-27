@@ -70,9 +70,8 @@ pub enum InternalBroadcast {
         msg: Message,
     },
     // This is why you might want multiple broadcasters per game, or an mpsc per connection
-    Kill {
-        killfeed: Vec<Kill>,
-        game_id: u64,
+    GameStateUpdate {
+        game_state: GameStateDTO
     },
     Died {
         killer: String,
@@ -226,9 +225,12 @@ impl Actor {
                             res.send(Ok(())).unwrap();
 
                             self.broadcaster
-                                .send(InternalBroadcast::Kill {
-                                    killfeed: game.killfeed.clone(),
-                                    game_id: game.thread.id.0,
+                                .send(InternalBroadcast::GameStateUpdate {
+                                    game_state: GameStateDTO {
+                                        thread: game.thread.id,
+                                        players: game.players.values().map(|x| x.clone()).collect(),
+                                        killfeed: game.killfeed.clone(),
+                                    }
                                 })
                                 .unwrap();
                         }
@@ -438,6 +440,7 @@ impl Actor {
             ("grant_type", "refresh_token".to_string()),
             ("refresh_token", rt.to_string()),
         ];
+        println!("Params for access token: {:?}", params);
         let mut headers = reqwest::header::HeaderMap::new();
 
         headers.insert(
@@ -461,12 +464,14 @@ impl Actor {
             .send()
             .await
             .unwrap()
-            .json::<DiscordTokenResponse>()
+            .text()
             .await
-            .map_err(|e| {
-                println!("Error, couldnt get rt: {:?}", e);
-                Error::AuthFailTokenExpired
-            })?;
+            .unwrap();
+        println!("Response: {:?}", &response);
+        let response = serde_json::from_str::<DiscordTokenResponse>(&response).map_err(|e| {
+            println!("Error, couldnt get rt: {:?}", e);
+            Error::AuthFailTokenExpired
+        })?;
 
         // println!("Response1: {:?}", response.text().await.unwrap());
         // let response = response.json::<Value>().await.unwrap();

@@ -144,14 +144,14 @@ pub async fn game_sse_handler(
                             .json_data(msg)
                             .unwrap();
                         },
-                        InternalBroadcast::Kill {killfeed, game_id} => {
-                            if (game_id != game_id) {
+                        InternalBroadcast::GameStateUpdate {game_state} => {
+                            if (game_state.thread.0 != game_id) {
                                 continue;
                             }
-                            println!("Killfeed: {:?}", killfeed);
+                            println!("Killfeed: {:?}", game_state.killfeed);
                             event = Event::default()
-                            .event("kill")
-                            .json_data(killfeed)
+                            .event("game_state")
+                            .json_data(game_state)
                             .unwrap();
                         },
                         InternalBroadcast::Died {
