@@ -96,7 +96,7 @@ export default function Select() {
                     {guild.games.map((game) => {
                       return (
                         <Stack gap={'$3'}
-
+                          key={game.thread.id}
                           onPress={() => {
                             setSelectedGame(game);
                             console.log("RRRAAAAAHHHH", game)

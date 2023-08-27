@@ -9,13 +9,13 @@ import { Link, router, useLocalSearchParams } from 'expo-router';
 // import { game, players } from '../../lib/mock'
 // import { game } from '../../lib/mock'
 import { Avatar } from 'tamagui'
-import { GameState, Player } from '../../lib/types';
+import { GameState, Player, PlayerState } from '../../lib/types';
 import { GestureEvent, PinchGestureHandler, PinchGestureHandlerEventPayload } from 'react-native-gesture-handler';
 // import { userData } from '../../lib/mock';
 
 export default function Game() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
-  const { id, players } = useLocalSearchParams();
+  // const { id, players } = useLocalSearchParams();
 
   const [userData, setUserData] = useAtom(userDataAtom);
   const [userGames, setUserGames] = useAtom(userGamesAtom);
@@ -33,6 +33,13 @@ export default function Game() {
   const [showKillFeed, setShowKillFeed] = useState(false);
   const [selectedGame, setSelectedGame] = useAtom(selectedGameAtom);
 
+  const players = useMemo(() => {
+    if (!selectedGame) return [];
+    console.log("change");
+    const players = selectedGame.state.players.filter((p) => p.state === "Alive");
+    console.log(players, selectedGame.state.players);
+    return players;
+  }, [selectedGame])
 
   function toggleCameraType() {
     setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
@@ -103,7 +110,7 @@ export default function Game() {
       data.append('resPlayer', userData?.id as string);
     }
     try {
-      const URL = dead ? `${SERVER_URL}/api/${id}/revive` : `${SERVER_URL}/api/${id}/shoot`
+      const URL = dead ? `${SERVER_URL}/api/${selectedGame?.thread.id}/revive/${userData?.id}` : `${SERVER_URL}/api/${selectedGame?.thread.id}/shoot/${userData?.id}`
       console.log(JSON.stringify(data))
       const res = await fetch(URL, {
         method: 'POST',
@@ -131,6 +138,7 @@ export default function Game() {
     }
   }
 
+
   return (
     <>
       {isImageSaving &&
@@ -140,6 +148,8 @@ export default function Game() {
       }
       <YStack bg={'#23252c'} flex={1} jc={'center'} ai={'center'} space={'$3'}>
         <YStack ai={'center'} jc={'center'}>
+          {/* <Text>{JSON.stringify(selectedGame?.state.players, null, 2)}</Text> */}
+          {/* <Text>{JSON.stringify(players, null, 2)}</Text> */}
           < XStack ai={'flex-start'} bg={'#8b89ac'} br={'$3'} p={'$1.5'}>
             <Avatar circular size="$3">
               <Avatar.Image src={`https://cdn.discordapp.com/avatars/${userData?.id}/${userData?.avatar}.png`} />
@@ -166,15 +176,30 @@ export default function Game() {
           <PinchGestureHandler onGestureEvent={(e) => { changeZoom(e) }}>
             <YStack>
               {showKillFeed ?
-                <Stack w={300} h={400} bg={'#8b89ac'}>
-                  {gameState?.killFeed.map((kill) => {
+                <YStack w={300} h={400} bg={'#8b89ac'} p={'$3'}>
+                  <ScrollView>
+                    {
+                      selectedGame?.state.players.map((player) => (
+                        <>
+                          <Avatar circular size="$3">
+                            <Avatar.Image src={`https://cdn.discordapp.com/avatars/${player?.id}/${player?.avatar}.png`} />
+                            <Avatar.Fallback bc="#8b89ac" />
+                          </Avatar>
+                          <Text>{player.username}</Text>
+                          <Text>{player.state}</Text>
+                        </>
+                      ))
+                    }
+                  </ScrollView>
+
+                  {/* {gameState.killFeed.map((kill) => {
                     <XStack>
                       <Text>{kill.time}</Text>
                       <Text>{kill.killerId}</Text>
                       <Text>{kill.killeeId}</Text>
                     </XStack>
-                  })}
-                </Stack>
+                  })} */}
+                </YStack>
                 :
                 <>
                   < Camera
@@ -229,18 +254,18 @@ export default function Game() {
                   circular size="$6"
                   pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
                   onPress={() => setKillee(null)}>
-                  <Avatar.Image src={killee.avatar} />
-                  <Avatar.Fallback bc="red" />
+                  <Avatar.Image src={`https://cdn.discordapp.com/avatars/${killee?.id}/${killee?.avatar}.png`} />
+                  <Avatar.Fallback bc="#55607b" />
                 </Avatar>
               }
-              {(killee == null && selectedGame) &&
-                selectedGame.gameState?.players.filter((player) => {player.active}).map((player) => {
+              {(killee == null && players) &&
+                players.map((player) => {
                   return (
                     <Avatar key={player.id}
                       circular size="$6"
                       pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
                       onPress={() => setKillee(player)}>
-                      <Avatar.Image src={player.avatar} />
+                      <Avatar.Image src={`https://cdn.discordapp.com/avatars/${player?.id}/${player?.avatar}.png`} />
                       <Avatar.Fallback bc="#55607b" />
                     </Avatar>
                   )
