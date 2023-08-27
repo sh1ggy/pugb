@@ -180,7 +180,7 @@ impl Actor {
                     killee,
                     killer,
                 } => {
-                    println!("in handle {:?}, {:?}, {:?}", image, self.games, self.guilds);
+                    // println!("in handle {:?}, {:?}, {:?}", image, self.games, self.guilds);
                     let ctx = if let Some(ctx) = self.ctx.as_ref() {
                         ctx
                     } else {
@@ -192,14 +192,15 @@ impl Actor {
                     match self.games.get_mut(&chan_id) {
                         Some(game) => {
                             let killee_clone = killee.clone();
+                            println!("kille{:?}, game{:?}", killee_clone, game);
                             let res_img = game
-                                .thread
-                                .send_message(ctx, move |m| {
-                                    let attatchment = AttachmentType::Bytes {
-                                        data: image.into(),
-                                        filename: "Hey man.jpg".into(),
-                                    };
-                                    let kileeId: u64 = killee_clone.parse().unwrap();
+                            .thread
+                            .send_message(ctx, move |m| {
+                                let attatchment = AttachmentType::Bytes {
+                                    data: image.into(),
+                                    filename: "Hey man.jpg".into(),
+                                };
+                                let kileeId: u64 = killee_clone.parse().unwrap();
                                     m.add_file(attatchment);
                                     m.allowed_mentions(|am| am.empty_parse().users(vec![kileeId]));
                                     m
