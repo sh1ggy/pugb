@@ -67,6 +67,7 @@ export default function Pugb() {
           const { guilds, games, user } = jsonres;
           setUserData(user);
           setUserGames(games);
+          router.push('/select')
         }
         catch (e) {
           console.log(JSON.stringify(e, null, 2));

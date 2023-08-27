@@ -2,23 +2,24 @@ import { Camera, CameraCapturedPicture, CameraPictureOptions, CameraType } from 
 import { useAtom } from 'jotai';
 import { Platform, TouchableOpacity } from 'react-native';
 import { Stack, Button, Text, View, XStack, YStack, Image, ScrollView, Spinner } from 'tamagui';
-import { userDataAtom, userGamesAtom, userGuildsAtom } from '../../lib/store';
+import { selectedGameAtom, userDataAtom, userGamesAtom, userGuildsAtom } from '../../lib/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, router } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 // import { players } from '../../lib/mock'
-import { game, players } from '../../lib/mock'
+// import { game, players } from '../../lib/mock'
 // import { game } from '../../lib/mock'
 import { Avatar } from 'tamagui'
 import { GameState, Player } from '../../lib/types';
 import { GestureEvent, PinchGestureHandler, PinchGestureHandlerEventPayload } from 'react-native-gesture-handler';
-import { userData } from '../../lib/mock';
+// import { userData } from '../../lib/mock';
 
 export default function Game() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
+  const { id, players } = useLocalSearchParams();
 
-  // const [userData, setUserData] = useAtom(userDataAtom);
-  // const [userGames, setUserGames] = useAtom(userGamesAtom);
-  // const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
+  const [userData, setUserData] = useAtom(userDataAtom);
+  const [userGames, setUserGames] = useAtom(userGamesAtom);
+  const [userGuilds, setUserGuilds] = useAtom(userGuildsAtom);
   const cameraRef = useRef<Camera | null>(null);
   const [type, setType] = useState(CameraType.back);
   const [permission, requestPermission] = Camera.useCameraPermissions();
@@ -30,6 +31,8 @@ export default function Game() {
   const [zoom, setZoom] = useState(0);
   const [dead, setDead] = useState(false);
   const [showKillFeed, setShowKillFeed] = useState(false);
+  const [selectedGame, setSelectedGame] = useAtom(selectedGameAtom);
+
 
   function toggleCameraType() {
     setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
@@ -100,7 +103,7 @@ export default function Game() {
       data.append('resPlayer', userData?.id as string);
     }
     try {
-      const URL = dead ? `${SERVER_URL}/api/${game.thread.id}/revive` : `${SERVER_URL}/api/${game.thread.id}/shoot`
+      const URL = dead ? `${SERVER_URL}/api/${id}/revive` : `${SERVER_URL}/api/${id}/shoot`
       console.log(JSON.stringify(data))
       const res = await fetch(URL, {
         method: 'POST',
@@ -127,10 +130,6 @@ export default function Game() {
       setZoom(0);
     }
   }
-
-  // useMemo(() => {
-
-  // }, [gameState])
 
   return (
     <>
@@ -225,19 +224,6 @@ export default function Game() {
         {capturedImage && !dead &&
           <ScrollView maxHeight={'$6'} horizontal directionalLockEnabled={true} automaticallyAdjustContentInsets={false}>
             <XStack gap={'$2'} maxHeight={'$6'}>
-              {/* {!killee &&
-                    game.gameState.players.map((player) => {
-                      return (
-                        <Avatar key={player.id}
-                          circular size="$6"
-                          pressStyle={{ borderColor: '#5462eb', borderWidth: '$1' }}
-                          onPress={() => setKillee(player)}>
-                          <Avatar.Image src={player.avatar} />
-                          <Avatar.Fallback bc="#55607b" />
-                        </Avatar>
-                      )
-                    })
-                  } */}
               {killee &&
                 <Avatar
                   circular size="$6"
@@ -247,8 +233,8 @@ export default function Game() {
                   <Avatar.Fallback bc="red" />
                 </Avatar>
               }
-              {(killee == null) &&
-                players.map((player) => {
+              {(killee == null && selectedGame) &&
+                selectedGame.gameState?.players.filter((player) => {player.active}).map((player) => {
                   return (
                     <Avatar key={player.id}
                       circular size="$6"
