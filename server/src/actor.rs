@@ -255,8 +255,8 @@ impl Actor {
                                     .send(InternalBroadcast::Winner {
                                         game_id: game_id,
                                         winner,
-                                    })
-                                    .unwrap();
+                                    });
+            
                             }
                         }
                         None => {
