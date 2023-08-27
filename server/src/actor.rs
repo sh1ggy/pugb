@@ -6,13 +6,16 @@ use async_session::chrono;
 use serde_json::value::Index;
 use serde_json::{from_value, Value};
 use serenity::http::Http;
-use serenity::model::prelude::{AttachmentType, ChannelId, Guild, GuildChannel, GuildId, Message, MessageId};
+use serenity::model::prelude::{
+    AttachmentType, ChannelId, Guild, GuildChannel, GuildId, Message, MessageId,
+};
 use serenity::model::user::User;
 use tokio::sync::{broadcast, mpsc, oneshot};
 
 use crate::error::{Error, Result};
 use crate::models::{
-    DiscordTokenResponse, Game, GuildDTO, Kill, Player, PremiumType, UserData, UserDataDTO, GameDTO, ThreadDTO, GameStateDTO,
+    DiscordTokenResponse, Game, GameDTO, GameStateDTO, GuildDTO, Kill, Player, PremiumType,
+    ThreadDTO, UserData, UserDataDTO,
 };
 
 type InternalRequester = tokio::sync::mpsc::UnboundedSender<InternalRequest>;
@@ -63,9 +66,14 @@ pub enum InternalRequest {
 #[derive(Debug, Clone)]
 pub enum InternalBroadcast {
     // -- Actor broadcasts
-    Test { msg: Message },
+    Test {
+        msg: Message,
+    },
     // This is why you might want multiple broadcasters per game, or an mpsc per connection
-    Kill { killfeed: Vec<Kill>, game_id: u64 },
+    Kill {
+        killfeed: Vec<Kill>,
+        game_id: u64,
+    },
     Died {
         killer: String,
         killee: String,
@@ -180,7 +188,6 @@ impl Actor {
 
                     match self.games.get_mut(&chan_id) {
                         Some(game) => {
-
                             let killee_clone = killee.clone();
                             let res_img = game
                                 .thread
@@ -191,7 +198,7 @@ impl Actor {
                                     };
                                     let kileeId: u64 = killee_clone.parse().unwrap();
                                     m.add_file(attatchment);
-                                    m.allowed_mentions(|am| {am.empty_parse().users(vec![kileeId])});
+                                    m.allowed_mentions(|am| am.empty_parse().users(vec![kileeId]));
                                     m
                                 })
                                 .await
@@ -234,14 +241,21 @@ impl Actor {
                         }
                     }
                 }
-                InternalRequest::Join { message_id, user, res } =>  {
+                InternalRequest::Join {
+                    message_id,
+                    user,
+                    res,
+                } => {
                     let ctx = if let Some(ctx) = self.ctx.as_ref() {
                         ctx
                     } else {
                         continue;
                     };
 
-                    let game = self.games.values_mut().find(|g| {g.first_message == message_id});
+                    let game = self
+                        .games
+                        .values_mut()
+                        .find(|g| g.first_message == message_id);
 
                     match game {
                         Some(game) => {
@@ -263,15 +277,14 @@ impl Actor {
                             continue;
                         }
                     }
-                },
+                }
             }
         }
     }
 
     pub async fn get_user(&mut self, rt: String) -> Result<UserDataDTO> {
         // Get user from hashmap, if doesnt exist make request to discord api
-        
-        
+
         let stuff = match self.users.get(&rt) {
             Some(user) => {
                 println!("User found in cache");
@@ -282,14 +295,17 @@ impl Actor {
                 self.refresh_user(rt.clone()).await?
             }
         };
-        
 
-        let avail_games = self.games.values().filter(|game| {
-            game.players.iter().find(|(id, player)| {
-                id.0.to_string() == stuff.0.id
-            }).is_some()
-        }).map(|g| { 
-            GameDTO {
+        let avail_games = self
+            .games
+            .values()
+            .filter(|game| {
+                game.players
+                    .iter()
+                    .find(|(id, player)| id.0.to_string() == stuff.0.id)
+                    .is_some()
+            })
+            .map(|g| GameDTO {
                 thread: ThreadDTO {
                     id: g.thread.id.0.to_string(),
                     name: g.thread.name.clone(),
@@ -299,9 +315,9 @@ impl Actor {
                     thread: g.thread.id,
                     players: g.players.values().map(|x| x.clone()).clone().collect(),
                     killfeed: g.killfeed.clone(),
-                }
-            }
-        }).collect();
+                },
+            })
+            .collect();
 
         let dto = UserDataDTO {
             user: stuff.0,
@@ -315,25 +331,22 @@ impl Actor {
         access_token.insert_str(0, "Bearer ");
         let fetched_user = self.get_user_from_api(&access_token, &rt).await?;
         let user_guilds = self.get_user_guilds(&access_token).await?;
-        
+
         // let joined_guilds:Vec<&GuildId> = user_guilds.iter().map(|f| {
         //     let matching_guild = self.guilds
         //         .iter()
         //         .find(|g| g.0.to_string() == f.id);
         //     matching_guild
-                
 
         // }).filter_map(|f| f.clone())
         // .collect();
         // println!("joined_guilds: {:?}", joined_guilds);
-       
 
         // Store the fetched user in the cache
         // Save all details of user on the cache// TODO db
         // self.users.insert(rt, fetched_user.clone());
         // Ok(fetched_user)
 
-       
         Ok((fetched_user, user_guilds))
     }
 
@@ -450,7 +463,10 @@ impl Actor {
             .unwrap()
             .json::<DiscordTokenResponse>()
             .await
-            .map_err(|e| Error::AuthFailTokenExpired)?;
+            .map_err(|e| {
+                println!("Error, couldnt get rt: {:?}", e);
+                Error::AuthFailTokenExpired
+            })?;
 
         // println!("Response1: {:?}", response.text().await.unwrap());
         // let response = response.json::<Value>().await.unwrap();
