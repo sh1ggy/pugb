@@ -240,8 +240,8 @@ impl Actor {
                                         players: game.players.values().map(|x| x.clone()).collect(),
                                         killfeed: game.killfeed.clone(),
                                     },
-                                })
-                                .unwrap();
+                                });
+                                
                             let alive_players: Vec<_> = game
                                 .players
                                 .values()
