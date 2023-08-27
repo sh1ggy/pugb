@@ -81,7 +81,7 @@ pub enum InternalBroadcast {
     Winner {
         winner: String,
         game_id: u64,
-    }
+    },
 }
 
 fn time() -> u128 {
@@ -194,13 +194,13 @@ impl Actor {
                             let killee_clone = killee.clone();
                             println!("kille{:?}, game{:?}", killee_clone, game);
                             let res_img = game
-                            .thread
-                            .send_message(ctx, move |m| {
-                                let attatchment = AttachmentType::Bytes {
-                                    data: image.into(),
-                                    filename: "Hey man.jpg".into(),
-                                };
-                                let kileeId: u64 = killee_clone.parse().unwrap();
+                                .thread
+                                .send_message(ctx, move |m| {
+                                    let attatchment = AttachmentType::Bytes {
+                                        data: image.into(),
+                                        filename: "Hey man.jpg".into(),
+                                    };
+                                    let kileeId: u64 = killee_clone.parse().unwrap();
                                     m.add_file(attatchment);
                                     m.allowed_mentions(|am| am.empty_parse().users(vec![kileeId]));
                                     m
@@ -233,30 +233,29 @@ impl Actor {
 
                             res.send(Ok(())).unwrap();
 
-                            self.broadcaster
-                                .send(InternalBroadcast::GameStateUpdate {
-                                    game_state: GameStateDTO {
-                                        thread: game.thread.id,
-                                        players: game.players.values().map(|x| x.clone()).collect(),
-                                        killfeed: game.killfeed.clone(),
-                                    },
-                                });
-                                
+                            self.broadcaster.send(InternalBroadcast::GameStateUpdate {
+                                game_state: GameStateDTO {
+                                    thread: game.thread.id,
+                                    players: game.players.values().map(|x| x.clone()).collect(),
+                                    killfeed: game.killfeed.clone(),
+                                },
+                            });
+
                             let alive_players: Vec<_> = game
                                 .players
                                 .values()
-                                .filter(|p| matches!( p.state, crate::models::PlayerState::Alive)).collect();
-                            
+                                .filter(|p| matches!(p.state, crate::models::PlayerState::Alive))
+                                .collect();
+
                             let count = alive_players.len().clone();
                             if (count == 1) {
-                                let winner = alive_players.first().unwrap().clone().user.id.to_string();
+                                let winner =
+                                    alive_players.first().unwrap().clone().user.id.to_string();
 
-                                self.broadcaster
-                                    .send(InternalBroadcast::Winner {
-                                        game_id: game_id,
-                                        winner,
-                                    });
-            
+                                self.broadcaster.send(InternalBroadcast::Winner {
+                                    game_id: game_id,
+                                    winner,
+                                });
                             }
                         }
                         None => {
@@ -281,32 +280,31 @@ impl Actor {
                     if (user.bot) {
                         println!("Bot tried to join");
                         continue;
+                    } else {
+                        let game = self
+                            .games
+                            .values_mut()
+                            .find(|g| g.first_message == message_id);
 
-                    }
-
-                    let game = self
-                        .games
-                        .values_mut()
-                        .find(|g| g.first_message == message_id);
-
-                    match game {
-                        Some(game) => {
-                            let user_id = user.id.clone();
-                            let player = Player {
-                                active: crate::models::PlayerActive::NotActive,
-                                state: crate::models::PlayerState::Alive,
-                                user,
-                            };
-                            println!("Player joined: {:?} in game: {:?}", player, game);
-                            game.players.insert(user_id, player);
-                            res.send(Ok(())).unwrap();
-                        }
-                        None => {
-                            res.send(Err(Error::BadRequestInvalidParams {
-                                inner: format!("No Game on the message of id {}", message_id),
-                            }))
-                            .unwrap();
-                            continue;
+                        match game {
+                            Some(game) => {
+                                let user_id = user.id.clone();
+                                let player = Player {
+                                    active: crate::models::PlayerActive::NotActive,
+                                    state: crate::models::PlayerState::Alive,
+                                    user,
+                                };
+                                println!("Player joined: {:?} in game: {:?}", player, game);
+                                game.players.insert(user_id, player);
+                                res.send(Ok(())).unwrap();
+                            }
+                            None => {
+                                res.send(Err(Error::BadRequestInvalidParams {
+                                    inner: format!("No Game on the message of id {}", message_id),
+                                }))
+                                .unwrap();
+                                continue;
+                            }
                         }
                     }
                 }
