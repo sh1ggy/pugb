@@ -246,6 +246,7 @@ impl Actor {
                                 state: crate::models::PlayerState::Alive,
                                 user,
                             };
+                            println!("Player joined: {:?} in game: {:?}", player, game);
                             game.players.insert(user_id, player);
                             res.send(Ok(())).unwrap();
                         }
