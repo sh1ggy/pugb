@@ -12,6 +12,7 @@ import { Avatar } from 'tamagui'
 import { GameState, Player, PlayerState } from '../../lib/types';
 import { GestureEvent, PinchGestureHandler, PinchGestureHandlerEventPayload } from 'react-native-gesture-handler';
 // import { userData } from '../../lib/mock';
+import { EventSourceEvent } from 'react-native-sse';
 
 export default function Game() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
@@ -47,7 +48,7 @@ export default function Game() {
 
   function startEventSource() {
     const eventSource = new EventSource(`${SERVER_URL}/api/${selectedGame?.thread.id}/game_sse/${userData?.id}`);
-    eventSource.addEventListener('message', (event) => {
+    eventSource.addEventListener('game_state', (event) => {
       console.log({ event });
       setGameState(event.data);
     })
@@ -63,6 +64,10 @@ export default function Game() {
       console.log({ event })
     })
   }
+
+  useEffect(() => {
+    startEventSource()
+  }, [])
 
   if (!permission) {
     // Camera permissions are still loading
