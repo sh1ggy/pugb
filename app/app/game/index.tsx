@@ -13,6 +13,7 @@ import { GameState, Player, PlayerState } from '../../lib/types';
 import { GestureEvent, PinchGestureHandler, PinchGestureHandlerEventPayload } from 'react-native-gesture-handler';
 // import { userData } from '../../lib/mock';
 import { EventSourceEvent } from 'react-native-sse';
+import { KillFeed } from '../../components/KillFeed';
 
 export default function Game() {
   const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
@@ -162,15 +163,13 @@ export default function Game() {
             </Avatar>
             <Text ta={'left'} fos={'$6'} p={'$2'} col={'#000'} color={'white'} textAlign='center' fontFamily={'$body'}>{userData?.username}</Text>
           </XStack >
-          <YStack zi={'$5'} p={'$2'} gap={'$3'}>
-            {
-              dead &&
-              <>
-                <Text ta={'center'} fos={'$4'} p={'$1'} col={'#000'} color={'#e06c75'} fontFamily={'$body'}>You are dead, killed by {"xxx"}</Text>
-                <Text ta={'center'} fos={'$1'} p={'$1'} col={'#000'} color={'white'}>Take a selfie at McDonalds to revive yourself</Text>
-              </>
-            }
-          </YStack>
+          {
+            dead &&
+            <YStack zi={'$5'} p={'$2'} gap={'$3'}>
+              <Text ta={'center'} fos={'$4'} p={'$1'} col={'#000'} color={'#e06c75'} fontFamily={'$body'}>You are dead, killed by {"xxx"}</Text>
+              <Text ta={'center'} fos={'$1'} p={'$1'} col={'#000'} color={'white'}>Take a selfie at McDonalds to revive yourself</Text>
+            </YStack>
+          }
           {/* <Button
           onPress={() => { startEventSource() }}
           bg={'#5462eb'}>Test SSE
@@ -181,52 +180,25 @@ export default function Game() {
           <PinchGestureHandler onGestureEvent={(e) => { changeZoom(e) }}>
             <YStack>
               {showKillFeed ?
-                <YStack w={300} h={400} bg={'#8b89ac'} p={'$3'}>
-                  <ScrollView>
-                    {
-                      selectedGame?.state.players.map((player) => (
-                        <>
-                          <Avatar circular size="$3">
-                            <Avatar.Image src={`https://cdn.discordapp.com/avatars/${player?.user.id}/${player?.user.avatar}.png`} />
-                            <Avatar.Fallback bc="#8b89ac" />
-                          </Avatar>
-                          <Text>{player.user.username}</Text>
-                          <Text>{player.state}</Text>
-                        </>
-                      ))
-                    }
-                    {/* <Text>{JSON.stringify(selectedGame)}</Text> */}
-                    <Text>{JSON.stringify(selectedGame?.state.players)}</Text>
-                  </ScrollView>
-
-                  {/* {gameState.killFeed.map((kill) => {
-                    <XStack>
-                      <Text>{kill.time}</Text>
-                      <Text>{kill.killerId}</Text>
-                      <Text>{kill.killeeId}</Text>
-                    </XStack>
-                  })} */}
-                </YStack>
+                <KillFeed/>
                 :
-                <>
-                  < Camera
-                    ref={cameraRef}
-                    type={type}
-                    style={{ width: 300, height: 400 }}
-                    autoFocus={!(Platform.OS == 'android')}
-                    onCameraReady={() => setIsCameraLoading(true)}
-                    zoom={zoom}
-                  />
-                </>
+                < Camera
+                  ref={cameraRef}
+                  type={type}
+                  style={{ width: 300, height: 400 }}
+                  autoFocus={!(Platform.OS == 'android')}
+                  onCameraReady={() => setIsCameraLoading(true)}
+                  zoom={zoom}
+                />
               }
-              <XStack>
-                <Button flex={1} fontSize={'$2'} bg={'black'} onPress={() => setShowKillFeed(!showKillFeed)}>{showKillFeed ? "Camera" : "Kill Feed"}</Button>
-                {!showKillFeed &&
-                  <Button fontSize={'$2'} bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
-                }
-              </XStack>
               {!showKillFeed &&
-                < Button bg={'black'} my={'$3'} onPress={takePicture} disabled={isCameraLoading ? false : true}>Shoot</Button>
+                <>
+                  <XStack>
+                    <Button flex={1} fontSize={'$2'} bg={'black'} onPress={() => setShowKillFeed(!showKillFeed)}>{showKillFeed ? "Camera" : "Kill Feed"}</Button>
+                    <Button fontSize={'$2'} bg={'black'} onPress={toggleCameraType}>Flip Camera</Button>
+                  </XStack>
+                  < Button bg={'black'} my={'$3'} onPress={takePicture} disabled={isCameraLoading ? false : true}>Shoot</Button>
+                </>
               }
             </YStack>
           </PinchGestureHandler>
