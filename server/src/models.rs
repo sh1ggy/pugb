@@ -30,40 +30,6 @@ pub enum PremiumType {
     NitroBasic,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct UserDataDTO {
-    pub user: UserData,
-    pub guilds: Vec<GuildDTO>,
-    pub games: Vec<GameDTO>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GameDTO {
-
-    pub thread: ThreadDTO,
-    pub state: GameStateDTO,
-
-}
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ThreadDTO {
-    pub id: String,
-    pub name: String,
-    pub guildID: String,
-}
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GameStateDTO {
-    pub thread: ChannelId,
-    pub players: Vec< Player>,
-    pub killfeed: Vec<Kill>,
-}
-
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GuildDTO {
-    pub id: String,
-    pub name: String,
-    pub icon: Option<String>,
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DiscordTokenResponse {

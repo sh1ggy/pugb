@@ -165,7 +165,6 @@ impl Actor {
                         state: crate::models::PlayerState::Alive,
                         user,
                     };
-                    game.players.insert(user_id, player);
                     self.games.insert(game.thread.id.clone(), game);
                 }
                 InternalRequest::InitServer { guilds, ctx } => {

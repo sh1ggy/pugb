@@ -107,12 +107,10 @@ pub async fn game_sse_handler(
     let guard = SSEGuard {
         actor: actor.clone(),
     };
-    // let user_id = user.unwrap().user.id.to_string();
-
-    // let mut event = Event::default().event(event)
 
     let stream = try_stream! {
         loop {
+            
             match rx.recv().await {
                 Ok(i) => {
                     let mut event = Event::default();
